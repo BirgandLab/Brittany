@@ -1,0 +1,20 @@
+   =============== GOODNESS-OF-FIT EVALUATION ================
+       RMSE= 1.114 [0.969 - 1.304]*
+       NSE = 0.810 [0.578 - 0.895]*
+
+	Evaluation of NSE: From UNSATISFACTORY to GOOD
+	Probability of fit being:
+	 - Very good (NSE = 0.900 - 1.000): 2.0%
+	 - Good (NSE = 0.800 - 0.899): 50.0%
+	 - Acceptable (NSE = 0.650 - 0.799): 37.6%
+	 - Unsatisfactory (NSE < 0.650): 10.4%
+
+       Presence of outliers (Q-test): NO
+       Model bias: NO
+                 
+
+   __________________________________________________________________
+   *: 95% Confidence interval obtained from Bca bootstrapping
+      using Politis and Romano (1994) block bootstrap method
+      for stationary dependent data.                        
+

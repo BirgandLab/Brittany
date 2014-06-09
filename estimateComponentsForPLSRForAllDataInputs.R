@@ -3,8 +3,11 @@ library(hydroGOF) #forgot what I used this for
 library(pls)  #Load the pls package
 
 #******Specify file paths and names
-path<-"C:\\Users\\FBLab\\Desktop\\workHere\\Data\\" #Specify folder where data is located
-fitPath<-"C:/Users/FBLab/Downloads/FITEVAL2_win/FITEVAL2_win/"#fiteval_out.txt"
+inPath<-"C:/Users/FBLab/Documents/GitHub/Brittany/inputFiles/" #Specify folder where data is located
+outPath<-"C:/Users/FBLab/Documents/GitHub/Brittany/output/"
+fitPath<-"C:/Users/FBLab/Downloads/FITEVAL2_win/FITEVAL2_win/" #fiteval_out.txt"
+
+
 fitEval<-paste(fitPath,"fiteval",sep="")
 fitFile<-paste(fitPath,"PLSR.in",sep="")
 fitFileOut<-paste(fitPath,"PLSR_out.txt",sep="")
@@ -27,11 +30,11 @@ for (chem in 1:17){
   #13 NNH4  14 Ntot	15 NTotFilt	16 Silic	17 Turb
   
   #open a file to make a 4 panel plot (one for each of the 4 fingerprint files)
-  jpeg(file=paste(path,"\\images\\",".",Chem[chem],"1.jpg",sep=""))
+  jpeg(file=paste(outPath,".",Chem[chem],"all.jpg",sep=""))
   par(mfrow=c(2,2))
         for (fn in 1:4){#for each filename
         #load the data
-            myData<-loadDataFile(path,filename[1])
+            myData<-loadDataFile(inPath,filename[1])
           #data are returned in a list myData$fingerPrints
           #                            myData$realTime
           #                            myData$ChemData
@@ -49,7 +52,8 @@ for (chem in 1:17){
                       Comps<-30    
         
         #calculate the PLSR model for the available data
-        
+        doISubset<-0        #here is a switch to subset or not subset the data
+        if (doISubset==1){
                 #subset if you like (comment out if not subset)
                       subset<-densityDependentSubset(ChemConc,realTime,fp,0.5,TRUE)
                       if(length(subset$ChemConc)<=39){
@@ -57,11 +61,12 @@ for (chem in 1:17){
                           }  
                       modelRMSEP<-RMSEP(plsr(subset$ChemConc~data.matrix(subset$fingerPrint),ncomp=Comps,validation="CV"))
                           
-                     
-       
-                    #  modelRMSEP<-RMSEP(plsr(ChemConc~data.matrix(fp),ncomp=30,validation="CV"))
-        #and pull out the RMSEP values for each component
-#*****Thishas a probelm the comlet cases might get the x axis off by removing a value, but not keeping the row count correct.
+                    }
+        if (doISubset==0){
+                    modelRMSEP<-RMSEP(plsr(ChemConc~data.matrix(fp),ncomp=30,validation="CV"))
+                    #and pull out the RMSEP values for each component
+                    }#end if (doIsubset)
+        #*****Thishas a probelm the comlet cases might get the x axis off by removing a value, but not keeping the row count correct.
 #could be fixed by 1.)avoiding nans in the RMSEP
 #or adding a column of index variables so the complete cases keeps the index even though it throws out a row of bad data
 
