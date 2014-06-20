@@ -29,7 +29,7 @@ colnames(Stats)<-c("n","r2","rmse","nrmse","slope","n","r2","rmse","nrmse","slop
 counter<-1
 Components<-matrix(nrow=70,ncol=4)
 
-for (reps in 1:200)
+for (reps in 1:100)
 #load data for checking number of components on
 for (chem in 1:17){
   Comps<-bestFitnComps[chem]
@@ -64,7 +64,7 @@ for (chem in 1:17){
   #Calculate Nash-Sutcliffe based goodness of fit
   fitFile<-paste(fitPath,Chem[chem],"2","PLSR.in",sep="")
   fitFileOut<-paste(fitPath,Chem[chem],"2","PLSR_out.txt",sep="")
-  Output<-PLSRFitAndTest(fp,ChemConc,realTime,Comps,fitEval,fitFile,fitFileOut,0.25)
+  Output<-PLSRFitAndTest(fp,ChemConc,realTime,Comps,fitEval,fitFile,fitFileOut,0.5)
   fitQuality[counter,]<-c(Output$fitQuality,Comps,chem)
   Stats[counter,]<-c(Output$Stats,Comps,chem)
  counter<-counter+1
