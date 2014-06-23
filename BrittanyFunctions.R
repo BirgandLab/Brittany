@@ -97,19 +97,10 @@ numberOfComponentsToUse<-function(fingerPrint,ChemConc){
               
               Fat<-RMSEP(plsr(ChemConc~data.matrix(fingerPrint),ncomp=30,validation="CV"))
               c<-as.matrix(Fat$val[2,1,])
+              ex<-0:(length(c)-1)
               nComps<-min(which(c==min(c)))-1
-              plot(c,xlab=c("number of comoponents +1"),ylab=c("RMSEP"),main=c("RMSEP vs # model components"))
-              if(nComps>15){#lets see if there is a better way
-                #evaluate difference between point to identify asmymptote
-                nComps<-which(abs(diff(c))==min(abs(diff(c))))
-                #find a place where the diff is minimized try that as a logical breakpoint
-             }
-              
-  
-  
-  
-  
-  
+              plot(ex,c,xlab=c("number of components"),ylab=c("RMSEP"),main=c("RMSEP vs # model components"))
+
   
   return(nComps=nComps)
 }

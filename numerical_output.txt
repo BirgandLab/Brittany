@@ -1,15 +1,16 @@
    =============== GOODNESS-OF-FIT EVALUATION ================
-       RMSE= 1.114 [0.969 - 1.304]*
-       NSE = 0.810 [0.578 - 0.895]*
+       RMSE= 0.054 [0.044 - 0.073]*
+       NSE = 0.878 [0.794 - 0.935]*
 
-	Evaluation of NSE: From UNSATISFACTORY to GOOD
+	Evaluation of NSE: From ACCEPTABLE to VERY GOOD
 	Probability of fit being:
-	 - Very good (NSE = 0.900 - 1.000): 2.0%
-	 - Good (NSE = 0.800 - 0.899): 50.0%
-	 - Acceptable (NSE = 0.650 - 0.799): 37.6%
-	 - Unsatisfactory (NSE < 0.650): 10.4%
+	 - Very good (NSE = 0.900 - 1.000): 25.5%
+	 - Good (NSE = 0.800 - 0.899): 70.0%
+	 - Acceptable (NSE = 0.650 - 0.799): 4.5%
+	 - Unsatisfactory (NSE < 0.650): 0.0%
 
-       Presence of outliers (Q-test): NO
+       Presence of outliers (Q-test): present and maybe affecting indicators
+       Potential outlier: {0.502804,0.135500}
        Model bias: NO
                  
 
