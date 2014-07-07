@@ -160,7 +160,7 @@ PLSRFitAndTest<-function(fingerPrint,ChemConc,realTime,numParameters,fitEval,fit
             fingerPrint<-fingerPrint[,-1]                    #complete cases fingerprints (remove RealTime)
             
             #RUN PLSR MODEL FOR calibration SUBSAMPLE
-            calibrationFit<-plsr(calibrationChemConc~data.matrix(calibrationFingerPrint),ncomp=numParameters,validation="CV")
+            calibrationFit<-plsr(calibrationChemConc~data.matrix(calibrationFingerPrint),ncomp=numParameters,validation="none")
           
             #predict concentrations for the calibration (uninteresting)
             calibPredict1<-predict(calibrationFit,data.matrix(calibrationFingerPrint),ncomp=numParameters,type=c("response"))

@@ -1,6 +1,7 @@
 library(oce) #used for despiking
 library(hydroGOF) #forgot what I used this for
 library(pls)  #Load the pls package
+source('~/Documents/GitHub/Brittany/BrittanyFunctions.R')
 
 #******Specify file paths and names
 FPpath<-"C:\\Users\\FBLab\\Desktop\\workHere\\Data\\FichiersFP\\" #Specify folder where data is located
@@ -10,23 +11,24 @@ fitEval<-paste(fitPath,"fiteval",sep="")
 fitFile<-paste(fitPath,"PLSR.in",sep="")
 fitFileOut<-paste(fitPath,"PLSR_out.txt",sep="")
 #filename<-c("S2010-2011TurbComp.fp" ,"S2011-2012TurbComp.fp","S2012-2013TurbComp.fp","S2013-2014TurbComp.fp")
-#filename<-c("S2010-20111stDer.fp" ,"S2011-20121stDer.fp","S2012-20131stDer.fp","S2013-20141stDer.fp")
-filename<-c("S2010-2011.fp" ,"S2011-2012.fp","S2012-2013.fp","S2013-2014.fp")
+filename<-c("S2010-20111stDer.fp" ,"S2011-20121stDer.fp","S2012-20131stDer.fp","S2013-20141stDer.fp")
+#filename<-c("S2010-2011.fp" ,"S2011-2012.fp","S2012-2013.fp","S2013-2014.fp")
 
 #filename<-c("S2010-20111stDerTurbComp.fp" ,"S2011-20121stDerTurbComp.fp","S2012-20131stDerTurbComp.fp","S2013-20141stDerTurbComp.fp")
 #LOAD DATA FOR MODEL AND MAKE PLSR MODEL BASED ON WHAT WE KNOW ABOUT WHATEVER
             ModelFilename<-c("OriginalBrittany.csv" ,"Brittany1stDerative.csv","TubidityCompensatedBrittany.csv","TurbidityCompensated1stDerivativeBrittany.csv")
             Chem<-c("CL", "NO2", "NNO2","NO3","NNO3","SO4","DOC","DIC","UV254", "PPO43","Ptot", "MES",
                     "NNH4",  "Ntot",  "NTotFilt",  "Silica",  "Turbidity");
-            bestFitnComps<-c(16,10,12,4,5,20,5,16,5,16,5,5,6,4,3,11,10)
-            bestFitFiles<-c(2,2,2,2,3,4,2,1,1,3,2,2,3,2,2,2,2)
+            #bestFitnComps<-c(16,10,12,4,5,20,5,16,5,16,5,5,6,4,3,11,10)
+            #bestFitFiles<-c(2,2,2,2,3,4,2,1,1,3,2,2,3,2,2,2,2)
             
           #read the data specified by the vector filename
             pTot<-11
             ppo43<-10
             MES<-12
-            myData<-loadDataFile(path,ModelFilename[bestFitFiles[4]])
+            myData<-loadDataFile(path,ModelFilename[2])
             numComp<-numberOfComponentsToUse(myData$fingerPrints,myData$ChemData$MES)
+            numComp<-15
             MESModel<-PLSRFitAndTest(myData$fingerPrints,myData$ChemData$MES,myData$realTime,numComp,fitEval,fitFile,fitFileOut,0)
 
 

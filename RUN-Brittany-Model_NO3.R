@@ -25,10 +25,11 @@ filename<-c("S2010-20111stDer.fp", "S2011-20121stDer.fp","S2012-20131stDer.fp","
             ppo43<-10
             MES<-12
             Turbidity<-17
-            myData<-loadDataFile(path,ModelFilename[bestFitFiles[Turbidity]])
-            numComp<-numberOfComponentsToUse(myData$fingerPrints,myData$ChemData$Turb)
-            numComp<-25
-            TurbModel<-PLSRFitAndTest(myData$fingerPrints,myData$ChemData$Turb,myData$realTime,numComp,fitEval,fitFile,fitFileOut,0)
+            NO3<-4
+            myData<-loadDataFile(path,ModelFilename[2])
+            numComp<-numberOfComponentsToUse(myData$fingerPrints,myData$ChemData$NO3)
+            #numComp<-25
+            NO3Model<-PLSRFitAndTest(myData$fingerPrints,myData$ChemData$NO3,myData$realTime,numComp,fitEval,fitFile,fitFileOut,0)
 
 
 #LOAD DATA FROM BRITTANY FOR PROJECTION
@@ -48,7 +49,7 @@ filename<-c("S2010-20111stDer.fp", "S2011-20121stDer.fp","S2012-20131stDer.fp","
 
 #USE THE MODEL TO PREDICT OUTPUT FOR THE WHOLE TIME PERIOD
             
-            Predict<-predict(TurbModel$Fit,data.matrix(fingerPrints),ncomp=numComp,type=c("response"))
+            Predict<-predict(NO3Model$Fit,data.matrix(fingerPrints),ncomp=numComp,type=c("response"))
             realTime[realTime<0]<-NA
 #             badPoints<-is.na(realTime)
 #             goodPoints<-!badPoints
@@ -57,7 +58,7 @@ filename<-c("S2010-20111stDer.fp", "S2011-20121stDer.fp","S2012-20131stDer.fp","
 #             plot(realTime[goodPoints],Predict[goodPoints],ylim=ylimits,type="l")
 
 #WRITE AN OUTPUT FILE WITH REALtIME, AND PREDICTED VALUES
-pTotFile<-paste(path,"Turbidity_projected.txt",sep="")
+pTotFile<-paste(path,"NO3_projected.txt",sep="")
 Predict<-as.matrix(Predict[,,1])
 
 output<-as.data.frame(matrix(0,ncol=2,nrow=length(realTime)))
@@ -66,14 +67,14 @@ output[,2]<-round(Predict,5)
 
 write.table(output,file=pTotFile, append = FALSE,row.names=FALSE,col.names=c("realTime","Predicted"))
 
-plot(output,type="l",col="black",main="projected Turbidity",xlab="date",ylab="concentration",ylim=c(-40,600))
+plot(output,type="l",col="black",main="projected NO3",xlab="date",ylab="concentration",ylim=c(0,90))
 
 #WRITE ANOTHER FILE WITH REALTIME, OBSERVED AND PREDICTED VALUES
-output<-as.data.frame(matrix(0,nrow=length(TurbModel$ObservedAndPredicted[,3]),ncol=3))
-output[,1]<-as.POSIXct(TurbModel$ObservedAndPredicted[,3], origin="1970-01-01",tz="")
-output[,2]<-round((TurbModel$ObservedAndPredicted[,1]),5)
-output[,3]<-round((TurbModel$ObservedAndPredicted[,2]),5)
+output<-as.data.frame(matrix(0,nrow=length(NO3Model$ObservedAndPredicted[,3]),ncol=3))
+output[,1]<-as.POSIXct(NO3Model$ObservedAndPredicted[,3], origin="1970-01-01",tz="")
+output[,2]<-round((NO3Model$ObservedAndPredicted[,1]),5)
+output[,3]<-round((NO3Model$ObservedAndPredicted[,2]),5)
 
 
-pTotFile<-paste(path,"Turbidity_observedAndPredicted.txt",sep="")
+pTotFile<-paste(path,"NO3_observedAndPredicted.txt",sep="")
 write.table(output,file=pTotFile, sep="\t",append = FALSE,row.names=FALSE,col.names=c("realTime","observed","predicted"))

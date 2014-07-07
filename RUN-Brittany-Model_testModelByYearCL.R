@@ -1,7 +1,7 @@
 library(oce) #used for despiking
 library(hydroGOF) #forgot what I used this for
 library(pls)  #Load the pls package
-source('~/Documents/GitHub/Brittany/BrittanyFunctions.R', echo=TRUE)
+source('~/Documents/GitHub/Brittany/BrittanyFunctions.R')
 
 #******Specify file paths and names
 FPpath<-"C:\\Users\\FBLab\\Desktop\\workHere\\Data\\FichiersFP\\" #Specify folder where data is located
@@ -10,6 +10,7 @@ fitPath<-"C:/Users/FBLab/Downloads/FITEVAL2_win/FITEVAL2_win/"  #fiteval_out.txt
 fitEval<-paste(fitPath,"fiteval",sep="")
 fitFile<-paste(fitPath,"PLSR.in",sep="")
 fitFileOut<-paste(fitPath,"PLSR_out.txt",sep="")
+#filename<-c("S2010-2011TurbComp.fp" ,"S2011-2012TurbComp.fp","S2012-2013TurbComp.fp","S2013-2014TurbComp.fp")
 #filename<-c("S2010-2011TurbComp.fp" ,"S2011-2012TurbComp.fp","S2012-2013TurbComp.fp","S2013-2014TurbComp.fp")
 filename<-c("S2010-20111stDer.fp", "S2011-20121stDer.fp","S2012-20131stDer.fp","S2013-20141stDer.fp")
 #LOAD DATA FROM BRITTANY FOR PROJECTION
@@ -28,13 +29,14 @@ fingerPrints<-data[,-(dim(data)[2]-3):-(dim(data)[2])]    #remove chemical data 
 fingerPrints<-fingerPrints[,-1:-2]  
 remove(data)
 
+
 #filename<-c("S2010-20111stDerTurbComp.fp" ,"S2011-20121stDerTurbComp.fp","S2012-20131stDerTurbComp.fp","S2013-20141stDerTurbComp.fp")
 #LOAD DATA FOR MODEL AND MAKE PLSR MODEL BASED ON WHAT WE KNOW ABOUT WHATEVER
             ModelFilename<-c("OriginalBrittany.csv" ,"Brittany1stDerative.csv","TubidityCompensatedBrittany.csv","TurbidityCompensated1stDerivativeBrittany.csv")
             Chem<-c("CL", "NO2", "NNO2","NO3","NNO3","SO4","DOC","DIC","UV254", "PPO43","Ptot", "MES",
                     "NNH4",  "Ntot",  "NTotFilt",  "Silica",  "Turbidity");
-            bestFitnComps<-c(16,10,12,4,5,20,5,16,5,16,5,5,6,4,3,11,10)
-            bestFitFiles<-c(2,2,2,2,3,4,2,1,1,2,2,3,3,2,2,2,2)
+#            bestFitnComps<-c(16,10,12,4,5,20,5,16,5,16,5,5,6,4,3,11,10)
+ #           bestFitFiles<-c(2,2,2,2,3,4,2,1,1,2,2,3,3,2,2,2,2)
             
           #read the data specified by the vector filename
             pTot<-11
@@ -44,7 +46,7 @@ remove(data)
           startYear<-c(2010,2011,2012)
           stopYear<-c(2011,2012,2014)
 
-            myData<-loadDataFile(path,ModelFilename[bestFitFiles[Turbidity]])
+            myData<-loadDataFile(path,ModelFilename[2])
 
 for (i in 1:3){
   startDate<-as.POSIXct(paste(startYear[i],"-08-01 00:00:00",sep=""),tz="gmt")
@@ -52,14 +54,18 @@ for (i in 1:3){
   
   
             useUsRealTIme<-(myData$realTime[(myData$realTime>startDate&myData$realTime<stopDate)])
+             #         keep<-!is.na(useUsRealTIme)
+            #useUsRealTIme<-useUsRealTIme[keep]
             useUsFP<-(myData$fingerPrints[(myData$realTime>startDate&myData$realTime<stopDate),])
+            #useUsFP<-useUsFP[keep,]
             useUsChem<-(myData$ChemData[(myData$realTime>startDate&myData$realTime<stopDate),])
-
+            #useUsChem<-useUsChem[keep,]
             #numComp<-numberOfComponentsToUse(myData$fingerPrints,myData$ChemData$Turb)
-            numComp<-numberOfComponentsToUse(useUsFP,useUsChem$Turb)
+            numComp<-numberOfComponentsToUse(useUsFP,useUsChem$CL)
+            
             #numComp<-25
-            #TurbModel<-PLSRFitAndTest(myData$fingerPrints,myData$ChemData$Turb,myData$realTime,numComp,fitEval,fitFile,fitFileOut,0)
-            TurbModel<-PLSRFitAndTest(useUsFP,useUsChem$Turb,useUsRealTIme,numComp,fitEval,fitFile,fitFileOut,0)
+            #pTotModel<-PLSRFitAndTest(myData$fingerPrints,myData$ChemData$Turb,myData$realTime,numComp,fitEval,fitFile,fitFileOut,0)
+            CLModel<-PLSRFitAndTest(useUsFP,useUsChem$CL,useUsRealTIme,numComp,fitEval,fitFile,fitFileOut,0)
 
 
                     #remove status and datetime
@@ -68,8 +74,8 @@ for (i in 1:3){
             useUsfp<-fingerPrints[(realTime>startDate&realTime<stopDate) ,]
 #USE THE MODEL TO PREDICT OUTPUT FOR THE WHOLE TIME PERIOD
             
-            #Predict<-predict(TurbModel$Fit,data.matrix(fingerPrints),ncomp=numComp,type=c("response"))
-Predict<-predict(TurbModel$Fit,data.matrix(useUsfp),ncomp=numComp,type=c("response"))
+            #Predict<-predict(pTotModel$Fit,data.matrix(fingerPrints),ncomp=numComp,type=c("response"))
+Predict<-predict(CLModel$Fit,data.matrix(useUsfp),ncomp=numComp,type=c("response"))
             realTime[realTime<0]<-NA
 #             badPoints<-is.na(realTime)
 #             goodPoints<-!badPoints
@@ -78,7 +84,7 @@ Predict<-predict(TurbModel$Fit,data.matrix(useUsfp),ncomp=numComp,type=c("respon
 #             plot(realTime[goodPoints],Predict[goodPoints],ylim=ylimits,type="l")
 
 #WRITE AN OUTPUT FILE WITH REALtIME, AND PREDICTED VALUES
-outFile<-paste(path,"Turbidity_projected",startYear[i],stopYear[i],".txt",sep="")
+outFile<-paste(path,"CL_projected",startYear[i],stopYear[i],".txt",sep="")
 Predict<-as.matrix(Predict[,,1])
 
 projection<-as.data.frame(matrix(0,ncol=2,nrow=length(useUs)))
@@ -87,13 +93,13 @@ projection[,2]<-round(Predict,5)
 
 write.table(projection,file=outFile, append = FALSE,row.names=FALSE,col.names=c("realTime","Predicted"))
 
-plot(projection,type="l",col="black",main="projected Turbidity",xlab="date",ylab="concentration",ylim=c(-40,600))
+plot(projection,type="l",col="black",main="projected CL",xlab="date",ylab="concentration",ylim=c(-20,40))
 
 #WRITE ANOTHER FILE WITH REALTIME, OBSERVED AND PREDICTED VALUES
-model<-as.data.frame(matrix(0,nrow=length(TurbModel$ObservedAndPredicted[,3]),ncol=3))
-model[,1]<-as.POSIXct(TurbModel$ObservedAndPredicted[,3], origin="1970-01-01",tz="")
-model[,2]<-round((TurbModel$ObservedAndPredicted[,1]),5)
-model[,3]<-round((TurbModel$ObservedAndPredicted[,2]),5)
+model<-as.data.frame(matrix(0,nrow=length(CLModel$ObservedAndPredicted[,3]),ncol=3))
+model[,1]<-as.POSIXct(CLModel$ObservedAndPredicted[,3], origin="1970-01-01",tz="")
+model[,2]<-round((CLModel$ObservedAndPredicted[,1]),5)
+model[,3]<-round((CLModel$ObservedAndPredicted[,2]),5)
 if(i==1){
   modeled<-as.data.frame(matrix(0,nrow=1,ncol=3))
   modeled<-rbind(modeled,model)
@@ -105,20 +111,20 @@ if(i>1){
   modeled<-rbind(modeled,model)
 }
 
-outFile<-paste(path,"Turbidity_observedAndPredicted",startYear[i],stopYear[i],".txt",sep="")
+outFile<-paste(path,"CL_observedAndPredicted",startYear[i],stopYear[i],".txt",sep="")
 write.table(model,file=outFile, sep="\t",append = FALSE,row.names=FALSE,col.names=c("realTime","observed","predicted"))
 
 }#endyearloop
-projected<-projected[2:95844,]
+projected<-projected[2:dim(projected)[1],]
 projected[,1]<-as.POSIXct(projected[,1],tz="",origin="1970-01-01")
-plot(projected,type="l",col="black",main="projected Turbidity from annual models",xlab="date",ylab="concentration",ylim=c(-40,600))
-outFile<-paste(path,"Turbidity_projected_wholeDataSet.txt",sep="")
-write.table(projection,file=outFile, append = FALSE,row.names=FALSE,col.names=c("realTime","Predicted"))
+plot(projected,type="l",col="black",main="projected CL from annual models",xlab="date",ylab="concentration",ylim=c(-20,40))
+outFile<-paste(path,"CL_projected_wholeDataSet.txt",sep="")
+write.table(projected,file=outFile, append = FALSE,row.names=FALSE,col.names=c("realTime","Predicted"))
 
 
-modeled<-modeled[2:860,]
+modeled<-modeled[2:dim(modeled)[1],]
 modeled[,1]<-as.POSIXct(modeled[,1],tz="",origin="1970-01-01")
-outFile<-paste(path,"Turbidity_observedAndPredicted_wholeDataSet.txt",sep="")
+outFile<-paste(path,"CL_observedAndPredicted_wholeDataSet.txt",sep="")
 write.table(modeled,file=outFile, sep="\t",append = FALSE,row.names=FALSE,col.names=c("realTime","observed","predicted"))
 OB(modeled[,2],modeled[,3],fitEval,fitFile,fitFileOut)
 #Output2010<-output

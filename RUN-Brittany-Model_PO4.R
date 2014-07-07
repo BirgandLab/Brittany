@@ -1,6 +1,7 @@
 library(oce) #used for despiking
 library(hydroGOF) #forgot what I used this for
 library(pls)  #Load the pls package
+source('~/Documents/GitHub/Brittany/BrittanyFunctions.R')
 
 #******Specify file paths and names
 FPpath<-"C:\\Users\\FBLab\\Desktop\\workHere\\Data\\FichiersFP\\" #Specify folder where data is located

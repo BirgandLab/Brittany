@@ -113,7 +113,7 @@ projected<-projected[2:95844,]
 projected[,1]<-as.POSIXct(projected[,1],tz="",origin="1970-01-01")
 plot(projected,type="l",col="black",main="projected Turbidity from annual models",xlab="date",ylab="concentration",ylim=c(-40,600))
 outFile<-paste(path,"Turbidity_projected_wholeDataSet.txt",sep="")
-write.table(projection,file=outFile, append = FALSE,row.names=FALSE,col.names=c("realTime","Predicted"))
+write.table(projected,file=outFile, append = FALSE,row.names=FALSE,col.names=c("realTime","Predicted"))
 
 
 modeled<-modeled[2:860,]
