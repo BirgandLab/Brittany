@@ -1,12 +1,19 @@
 library(oce) #used for despiking
 library(hydroGOF) #forgot what I used this for
 library(pls)  #Load the pls package
-source('~/Documents/GitHub/Brittany/BrittanyFunctions.R')
-
+#source('~/Documents/GitHub/Brittany/BrittanyFunctions.R')                        #upstairs box
+source("C:/Users/FBlab/Documents/GitHub/Brittany/BrittanyFunctions.R", echo=TRUE) #downstairs box
 #******Specify file paths and names
-FPpath<-"C:\\Users\\FBLab\\Desktop\\workHere\\Data\\FichiersFP\\" #Specify folder where data is located
-path<-"C:\\Users\\FBLab\\Desktop\\workHere\\Data\\"
-fitPath<-"C:/Users/FBLab/Downloads/FITEVAL2_win/FITEVAL2_win/"  #fiteval_out.txt"
+#FPpath<-"C:\\Users\\FBLab\\Desktop\\workHere\\Data\\FichiersFP\\" #Specify folder where data is located
+#path<-"C:\\Users\\FBLab\\Desktop\\workHere\\Data\\"
+#fitPath<-"C:/Users/FBLab/Downloads/FITEVAL2_win/FITEVAL2_win/"  #fiteval_out.txt"
+
+fitPath<-"C:/Users/FBlab/Desktop/FITEVAL2_win/FITEVAL2_win/"    #location on downstairs box
+path<-"C:/Users/FBlab/Desktop/work_here/Data/"   #downstairs box
+FPpath<-"C:/Users/FBlab/Desktop/work_here/Data/FichiersFP/" #downstairs box
+
+
+
 fitEval<-paste(fitPath,"fiteval",sep="")
 fitFile<-paste(fitPath,"PLSR.in",sep="")
 fitFileOut<-paste(fitPath,"PLSR_out.txt",sep="")
