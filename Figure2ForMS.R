@@ -58,12 +58,12 @@ source("C:/Users/FBlab/Documents/GitHub/Brittany/loadData.R", echo=TRUE)
  
 
 
-  chemical<-5 #chemical chemicals<-c("DIC","DOC","MES","NO3","PPO43","PTOT","SO4","TURB","CL",
+  chemical<-6 #chemical chemicals<-c("DIC","DOC","MES","NO3","PPO43","PTOT","SO4","TURB","CL",
                                     #"NO2","NTOT","NTOTFILT","NH4")#,"SILICA")
   numComp<-4 #specify         
   fool<-1 #specify file TYPE 1-REGFP 2-1STDER 3-TURBCOMP 4-1STDERTURBCOMP 
                   #   #mfN<-c(1,2,4,2,2,3,4,2,2,2,3,2,3)#,2)
-  o<-0       #points to drop from the front of a calibration
+  o<-50      #points to drop from the front of a calibration
   s<-0     #points to drop from the back end
 iD[counter,11]<-numComp
 iD[counter,12]<-chemical
@@ -82,7 +82,7 @@ plot(as.POSIXct(AP_R$x,origin="1970-01-01 00:00:00"),
 axis(4)
 par(new=TRUE)
 
-for(i in 1:10){
+for(i in 1:1){
 #GENERATE A PLSR MODEL FOR THE SELECTED CALIBRATION DATA
 #                             ModelRandom<-PLSRFitAndTestNoNSE(useUsFP[o:(length(useUsChem)-s),],
 #                                                              useUsChem[o:(length(useUsChem)-s)],
@@ -92,13 +92,13 @@ for(i in 1:10){
                             ModelRandom<-PLSRFitAndTestNoNSE(useUsFP2[o:(length(useUsChem2)-s),],
                                                              useUsChem2[o:(length(useUsChem2)-s)],
                                                              useUsRealTIme2[o:(length(useUsChem2)-s)],
-                                                             numComp,fitEval,fitFile,fitFileOut,0.5)
+                                                             numComp,fitEval,fitFile,fitFileOut,0.9)
                             
 #USE THE MODEL TO PREDICT OUTPUT FOR THE TARGET TIME WINDOW        
                               PredictRandom<-predict(ModelRandom$calibrationFit,
                                                      data.matrix(useUsfp),
                                                      ncomp=numComp,
-                                                     type=c("response"))#not the subtle but meaningful difference in 
+                                                     type=c("response"))#note the subtle but meaningful difference in 
                                                        #useUsFP and use useUsfp. one had422 obs the other 17247 obs
 #                                                        
 #                              PredictRandom<-predict(ModelRandom$Fit,
@@ -119,8 +119,8 @@ for(i in 1:10){
                   iD[counter,7:10]<-OB(ModelRandom$OaP2[,1],ModelRandom$OaP2[,2],fitEval,fitFile,fitFileOut)
                   iD[counter,15:29]<-ModelRandom$Stats
 if(i==1){
-plot(as.POSIXct(AP_R$x[blah],origin="1970-01-01 00:00:00"),
-     AP_R$y[blah],type="l",col=rainbow(10)[i],
+plot(as.POSIXct(AP_R$x,origin="1970-01-01 00:00:00"),
+     AP_R$y,type="l",col=rainbow(10)[i],
      main=chemicals[chemical],
      ylim=c(min(AP_R$y),max( AP_R$y)),
      xlim=c(min( AP_R$x),max( AP_R$x)),
@@ -128,15 +128,17 @@ plot(as.POSIXct(AP_R$x[blah],origin="1970-01-01 00:00:00"),
      ylab=paste(chemicals[chemical],"concentration",sep=" ")
 )
 }
-else{points(as.POSIXct(AP_R$x[blah],origin="1970-01-01 00:00:00"),
-          AP_R$y[blah],type="l",col=rainbow(10)[i]
+else{
+  points(as.POSIXct(AP_R$x,origin="1970-01-01 00:00:00"),
+          AP_R$y,type="l",col=rainbow(10)[i]
           #main=chemicals[chemical],
          # ylim=c(min(AP_R$y),max( AP_R$y)),
          # xlim=c(min( AP_R$x),max( AP_R$x)),
          # xlab="date",
          # ylab=paste(chemicals[chemical],"concentration",sep=" ")
           #)
-)}
+)
+}
 
                   #print(i)
 

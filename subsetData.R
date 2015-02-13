@@ -88,6 +88,12 @@ flowApprox<-approx(uuFlowTime,uuFlowFlow,n=totmin+1) #create a time series of fl
 eventFlowTime<-flowApprox$x[flowApprox$x>eventStart & flowApprox$x<eventStop]
 eventFlowFlow<-flowApprox$y[flowApprox$x>eventStart & flowApprox$x<eventStop]
 
+
+
+
+
+
+
 #REMOVE ALL NAN POINTS
 fp<-cbind(useUsRealTIme,useUsFP,as.matrix(useUsChem[,chemN[chemical]]))
 foo<-fp[complete.cases(fp[,2:dim(fp)[2]]),] #removes all the rows for which there is a NA--keeping time in there

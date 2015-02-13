@@ -96,12 +96,12 @@ bar<-read.table(file="C:/Users/FBlab/Desktop/work_here/Data/Brittany/flow/Débit 
 bar<-read.table(file="C:/Users/FBlab/Desktop/work_here/Data/Brittany/flow/Débit Kervidy Naizin 2012-2014.txt",
         sep=";",skip=1, dec=".",na.strings="---")
 #these 2012 through 2014 flow data are not corrected. great big mess. :(
-Date<-flow$V1        #the date
-T<-flow$V2     #the time
+Date<-bar$V1        #the date
+T<-bar$V2     #the time
 D<-paste(Date,T,sep=" ")               #put back in the fixed values
 D<-strptime(D, '%d/%m/%Y %H:%M:%S',tz="UTC")    #convert it to a _flawless_ time opject
-flow$realTime<-D    
-flow$flow<-flow$V3
+bar$realTime<-D    
+bar$flow<-bar$V3
 flow<-flow[,-1:-3]
 flow<-flow[complete.cases(flow$flow),]
 flow<-flow[complete.cases(flow$realTime),]# removes all the rows for which there is a NA--keeping time in there
