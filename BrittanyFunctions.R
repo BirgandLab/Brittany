@@ -1,3 +1,8 @@
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 
 densityDependentSubset<-function(ChemConc,realTime,fingerPrint,subsetRatio,Replace){
               #ChemConc a vector of chemical concentrations for each fingerprint
@@ -56,6 +61,10 @@ densityDependentSubset<-function(ChemConc,realTime,fingerPrint,subsetRatio,Repla
 
 
 
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 
 loadDataFile<-function(filepath,filename){
               data<-read.table(file=paste(filepath,filename,sep=""),sep=",",header=TRUE,skip=0)
@@ -80,6 +89,11 @@ loadDataFile<-function(filepath,filename){
 
 
 
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 #a function that you pass 2 matrices 1 with scan fingerprints. the other with chem conc data
 # the function will remove datalines with NANs and incomplete records
 #the function will run a PLSR model on the data
@@ -109,6 +123,15 @@ numberOfComponentsToUse<-function(fingerPrint,ChemConc,ylabel,subTitle){
   return(nComps=nComps)
 }
 
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 PLSRFitAndTest<-function(fingerPrint,ChemConc,realTime,numParameters,fitEval,fitFile,fitFileOut,subsample) {
   
   #assemble so complete cases keeps time data organized
@@ -125,7 +148,7 @@ PLSRFitAndTest<-function(fingerPrint,ChemConc,realTime,numParameters,fitEval,fit
       colnames(Stats)<-c("n","r2","rmse","nrmse","slope")
     }
   
-     if(subsample > 0){#enter density dependent subsampling with Subsample Value guiding the process
+    if(subsample > 0){#enter density dependent subsampling with Subsample Value guiding the process
           #How about using native HIST function with Sturgess, scott and DF methods for breaking.
           #Then, if possible take 1 point from each bin
           #histKyle<-hist(ChemConc,breaks=steps, plot=FALSE)
@@ -195,10 +218,12 @@ PLSRFitAndTest<-function(fingerPrint,ChemConc,realTime,numParameters,fitEval,fit
   fingerPrint<-fingerPrint[,-1]                    #complete cases fingerprints (remove RealTime)
   
   
-  #run PLSR Model for all available data
+#run PLSR Model for all available data
  Fit<-plsr(ChemConc~data.matrix(fingerPrint),ncomp=numParameters,validation="CV")  #PLSR model to predict chemConc with cross validation
+  #make predictions 
  Predict<-predict(Fit,data.matrix(fingerPrint),ncomp=numParameters,type=c("response"))
-      fitQualityFull<-OB(ChemConc,Predict,fitEval,fitFile,fitFileOut)
+  #assess quality    
+ fitQualityFull<-OB(ChemConc,Predict,fitEval,fitFile,fitFileOut)
       op3<-cbind(ChemConc,Predict,RealTime)
          if(subsample>0){
                        fitStats<-summary(lm(ChemConc~Predict))
@@ -219,16 +244,36 @@ PLSRFitAndTest<-function(fingerPrint,ChemConc,realTime,numParameters,fitEval,fit
                        Stats[5]<-fitStats$coefficients[2,1] #slope
                      }
     
-   if (subsample==0){
-  return (list(Fit=Fit,fitQuality=fitQualityFull,ObservedAndPredicted=op3,Stats=Stats))
+  
+#if we did not subsample, return the full model result
+if (subsample==0){
+  return (list(Fit=Fit,
+               fitQuality=fitQualityFull,
+               ObservedAndPredicted=op3,
+               Stats=Stats
+               )
+          )
    }
   if (subsample>0){
-    return (list(Fit=Fit,calibrationFit=calibrationFit,fitQuality=c(fitQualityModel,fitQualityModelFull,fitQualityFull),OaP1=op1,OaP2=op2,ObservedAndPredicted=op3,Stats=Stats))
+    return (list(Fit=Fit,
+                 calibrationFit=calibrationFit,
+                 fitQuality=c(fitQualityModel,fitQualityModelFull,fitQualityFull),
+                 OaP1=op1,
+                 OaP2=op2,
+                 ObservedAndPredicted=op3,
+                 Stats=Stats
+                 )
+            )
     
   }
  
 }
 
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 
 OB<-function(observed,predicted,fitEval,fitFile,fitFileOut){
                 ObsAndPred<-cbind(observed,predicted)
@@ -254,11 +299,18 @@ return(fitQuality)
 
 
 
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 PLSRFitAndTestNoNSE<-function(fingerPrint,ChemConc,realTime,numParameters,fitEval,fitFile,fitFileOut,subsample) {
   
   #assemble so complete cases keeps time data organized
   fingerPrint<-cbind(realTime,fingerPrint,as.matrix(ChemConc))                          #bind the two matrices together to determine complete cases
-  fingerPrint<-fingerPrint[complete.cases(fingerPrint[,2:dim(fingerPrint)[2]]),] # removes all the rows for which there is a NA--keeping time in there
+  fingerPrint<-fingerPrint[complete.cases(fingerPrint[,2:dim(fingerPrint)[2]]),]        #removes all the rows for which there is a NA--keeping time in there
   
   
   
@@ -377,3 +429,71 @@ PLSRFitAndTestNoNSE<-function(fingerPrint,ChemConc,realTime,numParameters,fitEva
   }
   
 }
+
+
+
+
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%Load fingerprint data and return them in a list%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+loadFingerPrints<-function(FingerPrintPath,filename,type){
+    if(type=="original") {
+          Row<-1
+          data0<-read.table(file=paste(FingerPrintPath,filename[Row,1],sep=""),sep="\t",header=TRUE,skip=1,dec=".")
+          data1<-read.table(file=paste(FingerPrintPath,filename[Row,2],sep=""),sep="\t",header=TRUE,skip=1,dec=",")
+          data2<-read.table(file=paste(FingerPrintPath,filename[Row,3],sep=""),sep="\t",header=TRUE,skip=1,dec=",")
+          data3<-read.table(file=paste(FingerPrintPath,filename[Row,4],sep=""),sep="\t",header=TRUE,skip=1,dec=",")
+          }
+    if(type=="1stDerivative")Row<-2
+    if(type=="TurbidityCompensated")Row<-3  
+    if(type=="1stDerivativeTurbidityCompensated")Row<-4
+
+    if(Row>1){
+              data0<-read.table(file=paste(FingerPrintPath,filename[Row,1],sep=""),sep="\t",header=TRUE,skip=1,dec=".")
+              data1<-read.table(file=paste(FingerPrintPath,filename[Row,2],sep=""),sep="\t",header=TRUE,skip=1,dec=".")
+              data2<-read.table(file=paste(FingerPrintPath,filename[Row,3],sep=""),sep="\t",header=TRUE,skip=1,dec=".")
+              data3<-read.table(file=paste(FingerPrintPath,filename[Row,4],sep=""),sep="\t",header=TRUE,skip=1,dec=".")
+              }
+  #put them all together
+  data<-rbind(data0,data1,data2,data3)
+  
+  #remove the individual files
+  remove(data0,data1,data2,data3)
+  
+  #get rid of the files with bad probe status
+  data<-data[data[,2]=="Ok",]
+  
+  #convert time to a dateTime Object
+  realTime<-strptime(data[,1], "%Y.%m.%d  %H:%M:%S",tz="UTC")                     
+  
+  #remove  columns of NaNs in 742.5-750 nM bins
+  fingerPrints<-data[,-(dim(data)[2]-3):-(dim(data)[2])]
+  
+  #remove first couple columns
+  fingerPrints<-fingerPrints[,-1:-2]
+  
+  
+  
+  realTime<-realTime[complete.cases(fingerPrints[,2:dim(fingerPrints)[2]])]  
+  fingerPrints<-fingerPrints[complete.cases(fingerPrints[,2:dim(fingerPrints)[2]]),]
+  
+  
+  #align data to closest minute
+  realTime<-align.time(realTime,60) #rounds UP to begining of next interval (specified in seconds)
+  
+  #left with fingerPrints and realTime
+  #FingerPrints<-fingerPrints
+  #RealTime<-realTime
+  
+  #get rid of the old container
+  #remove(data)
+  return(list(fingerPrints=fingerPrints,realTime=realTime))
+}
+
+
+
