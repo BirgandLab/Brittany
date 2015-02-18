@@ -398,6 +398,7 @@ PLSRFitAndTestNoNSE<-function(fingerPrint,ChemConc,realTime,numParameters,fitEva
   #run PLSR Model for all available data
   Fit<-plsr(ChemConc~data.matrix(fingerPrint),ncomp=numParameters,validation="CV")  #PLSR model to predict chemConc with cross validation
   Predict<-predict(Fit,data.matrix(fingerPrint),ncomp=numParameters,type=c("response"))
+ 
   #fitQualityFull<-OB(ChemConc,Predict,fitEval,fitFile,fitFileOut)
   op3<-cbind(ChemConc,Predict,RealTime)
   
@@ -424,7 +425,7 @@ PLSRFitAndTestNoNSE<-function(fingerPrint,ChemConc,realTime,numParameters,fitEva
     return (list(Fit=Fit,ObservedAndPredicted=op3,Stats=Stats))
   }
   if (subsample>0){
-    return (list(Fit=Fit,calibrationFit=calibrationFit,OaP1=op1,OaP2=op2,ObservedAndPredicted=op3,Stats=Stats))
+    return (list(FitAll=Fit,Fit=calibrationFit,OaP1=op1,OaP2=op2,ObservedAndPredicted=op3,Stats=Stats))
     
   }
   
@@ -496,4 +497,84 @@ loadFingerPrints<-function(FingerPrintPath,filename,type){
 }
 
 
+
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
+
+subsetSpecData<-function(fileType,dataType,startDates,stopDates,chem){
+      if(fileType=="original"){
+        data<-original
+        myData<-originalmyData
+      }
+      
+      if(fileType=="1stDer"){
+        data<-Derivative
+        myData<-DermyData
+      }
+      
+      if(fileType=="turbComp"){
+        data<-TurbidityCompensated
+        myData<-TCmyData
+      }
+      
+      if(fileType=="1stDerTurbComp"){
+        data<-FstDerivativeTurbidityCompensated
+        myData<-TC1DmyData
+      }
+     
+  if(dataType=="fingerPrints"){
+    output<-subset(data,dataType,startDates,stopDates)
+  }
+  
+  if(dataType=="calibration"){
+    output<-subset(myData,dataType,startDates,stopDates)
+  }
+return(output)  
+}
+
+
+subset<-function(data,type,startDates,stopDates,chem=NULL){
+  
+  logicalIndexofInclusion<-matrix(nrow=length(data$realTime),ncol=length(startDates))
+  
+  for(i in 1:length(startDates)){
+    logicalIndexofInclusion[,i]<-(data$realTime>startDates[i]&data$realTime<stopDates[i])
+  }
+  
+  keep<-as.logical(rowSums(logicalIndexofInclusion,na.rm=TRUE))
+  
+  
+  if (type=="calibration"){
+    realTime<-data$realTime[keep]
+    fingerprint<-data$fingerPrint[keep,]
+    ChemData<-data$ChemData[keep,]
+    
+    fp<-cbind(realTime,fingerprint,as.matrix(ChemData[,chem]))
+    goodData<-fp[complete.cases(fp[,2:dim(fp)[2]]),] #removes all the rows for which there is a NA--keeping time in there
+    realTime<-goodData[,1]                      #pull components back out
+    ChemData<-goodData[,dim(goodData)[2]]
+    fingerprints<-goodData[,-1] 
+    fingerprints<-fingerprints[,-dim(fingerprints)[2]]
+    
+    
+    
+    return(list(realTime=realTime,fingerPrints=fingerprint,ChemData=ChemData))
+    #returnStatement
+  }
+  
+  if (type=="fingerPrints"){
+    realTime<-data$realTime[keep]
+    fingerprint<-data$fingerPrint[keep,]
+    return(list(realTime=realTime,fingerPrints=fingerprint))
+    
+  }
+  
+  if(type=="flow"){
+    realTime<-data$realTime[keep]
+    flow<-data$flow[keep]
+    return(list(realTime=realTime,flow=flow))
+  }
+  
+}
 

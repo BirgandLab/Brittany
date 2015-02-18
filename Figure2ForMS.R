@@ -60,15 +60,14 @@ j<-1 #the number of times to run through each model style
   iD<-matrix(nrow=100,ncol=30)
     #colnames(iD)<-c("n","NSE","VG","G","A","B","chemical","numComp","fool","o")
 
-#this section is out of order and has no value to initialized these variables
   
 #nash-sutcliffe efficiency output for the iterative model
-  RNSE<-matrix(nrow=j,ncol=length(calibPoints))
-  ENSE<-matrix(nrow=j,ncol=length(calibPoints))
+ # RNSE<-matrix(nrow=j,ncol=length(calibPoints))
+ # ENSE<-matrix(nrow=j,ncol=length(calibPoints))
 
 #cumulative chemical load for the iterative model
-  AnnualLoad<-matrix(nrow=j,ncol=length(calibPoints))
-  EventLoad<-matrix(nrow=j,ncol=length(calibPoints))
+ # AnnualLoad<-matrix(nrow=j,ncol=length(calibPoints))
+ # EventLoad<-matrix(nrow=j,ncol=length(calibPoints))
 
 #*******************************************************************************************************************/
 #*******************************************************************************************************************/
@@ -88,95 +87,90 @@ source("C:/Users/FBlab/Desktop/Brittany/loadData.R", echo=FALSE)
 #*******************************************************************************************************************/
   
 
-  chemical<-6 #chemical chemicals<-c("DIC","DOC","MES","NO3","PPO43","PTOT","SO4","TURB","CL",
-                                    #"NO2","NTOT","NTOTFILT","NH4")#,"SILICA")
-  numComp<-4 #specify number of components to use in the model
-
-  fileType<-1 #specify file TYPE 1-REGFP 2-1STDER 3-TURBCOMP 4-1STDERTURBCOMP 
+  chemical<-6   #chemical chemicals<-c("DIC","DOC","MES","NO3","PPO43","PTOT","SO4","TURB","CL",                                    #"NO2","NTOT","NTOTFILT","NH4")#,"SILICA")
+  numComp<-4    #specify number of components to use in the model
+  fileType<-1   #specify file TYPE 1-REGFP 2-1STDER 3-TURBCOMP 4-1STDERTURBCOMP 
+  subsetRate=0
                   #   #mfN<-c(1,2,4,2,2,3,4,2,2,2,3,2,3)#,2)
-  o<-50      #points to drop from the front of a calibration
+  o<-0      #points to drop from the front of a calibration
   s<-0     #points to drop from the back end
-  
+
   #make a record of the parameters used
   iD[counter,11:14]<-c(numComp,chemical,fileType,o)
 
-  #subset the data--perhaps rewrite this as a function that is passed a vector of dates to include
-  source("C:/Users/FBlab/Desktop/Brittany/subsetData.R", echo=FALSE)
+calibration<-subsetSpecData("original","calibration",startDate,stopDate,chemN[chemical])
+specDataToModel<-subsetSpecData("original","fingerPrints",startDate,stopDate)
+flow<-subset(flow,"flow",startDate,stopDate)
                  
-  
-
 for(i in 1:1){
 #GENERATE A PLSR MODEL FOR THE SELECTED CALIBRATION DATA
-#                            ModelRandom<-PLSRFitAndTestNoNSE(calibrationFingerPrints[o:(length(calibrationAnalytes)-s),],
-#                                                            calibrationAnalytes[o:(length(calibrationAnalytes)-s)],
-#                                                            calibrationRealTime[o:(length(calibrationAnalytes)-s)],
-#                                                            numComp,fitEval,fitFile,fitFileOut,0.9)         
-#                           
-                            ModelRandom<-PLSRFitAndTestNoNSE(calibrationFingerPrints2[o:(length(calibrationAnalytes2)-s),],
-                                                             calibrationAnalytes2[o:(length(calibrationAnalytes2)-s)],
-                                                             calibrationRealTime2[o:(length(calibrationAnalytes2)-s)],
-                                                             numComp,fitEval,fitFile,fitFileOut,0.9)                  
+                          
+                   ModelConcentration<-PLSRFitAndTestNoNSE(calibration$fingerPrints,
+                                                   calibration$ChemData,
+                                                   calibration$realTime,
+                                                   numComp,fitEval,fitFile,fitFileOut,subsetRate)                  
 #USE THE MODEL TO PREDICT OUTPUT FOR THE TARGET TIME WINDOW        
-                              PredictRandom<-predict(ModelRandom$calibrationFit,
-                                                     data.matrix(subsetFingerPrints),
-                                                     ncomp=numComp,
-                                                     type=c("response"))  
-                                                         
-#                              PredictRandom<-predict(ModelRandom$Fit,
-#                                                     data.matrix(useUsfp),
-#                                                     ncomp=numComp,
-#                                                     type=c("response"))#not the subtle but meaningful difference in 
-#                              #useUsFP and use useUsfp. one had422 obs the other 17247 obs
+                  PredictedConcentration<-predict(ModelConcentration$Fit,
+                                         as.matrix(specDataToModel$fingerPrints),
+                                         ncomp=numComp,
+                                         type=c("response"))  
+                          
+    #have updated things up to here--now need to do just a little bit more to smooth the rest of this over, and 
+    #perhaps there will be a functioning tool out of the whole thing.
 
-
-                  AP_R<-approx(subsetRealTime,PredictRandom,n=totmin+1) #create a time series of [ ] at 1 minute intervals for the whole dataset
-                         # AP_R$y[(AP_R$y<0)]<-0
-                  event<-(AP_R$x>as.numeric(eventStart)&AP_R$x<as.numeric(eventStop))
+                    PredictedAnnualConcentrationTS<-as.data.frame(approx(subsetRealTime,PredictedConcentration,n=totmin+1)) #create a time series of [ ] at 1 minute intervals for the whole dataset
+                         # PredictedAnnualConcentrationTS$y[(PredictedAnnualConcentratinTS$y<0)]<-0
+                    PredictedEventConcentrationTS<-(PredictedAnnualConcentrationTS$x>as.numeric(eventStart)&PredictedAnnualConcentrationTS$x<as.numeric(eventStop))
                         
                         if(!exists("chemoGraphicTable",1)){
-                          chemoGraphicTable<-matrix(nrow=length(flowApprox$x), ncol=length(chemicals)+2)
-                          chemoGraphicTable[,1]<-flowApprox$x  #date for flow calculation
-                          chemoGraphicTable[,2]<-flowApprox$y  #flow calculation
+                          chemoGraphicTable<-matrix(nrow=length(AnnualFlowApprox$x), ncol=length(chemicals)+2)
+                          chemoGraphicTable[,1]<-AnnualFlowApprox$x  #date for flow calculation
+                          chemoGraphicTable[,2]<-AnnualFlowApprox$y  #flow calculation
                           colnames(chemoGraphicTable)<-c("date","flow(l*s-1","DIC","DOC","MES","NO3","PPO43","PTOT","SO4","TURB","CL","NO2","NTOT","NTOTFILT","NH4")
                           #make base plot
-                               plot(as.POSIXct(AP_R$x,origin="1970-01-01 00:00:00"),
+                               plot(as.POSIXct(PredictedAnnualConcentrationTS$x,origin="1970-01-01 00:00:00"),
                                     chemoGraphicTable[,2],col="green",type="l",xaxt="n",yaxt="n",xlab="",ylab="",
-                                    xlim=c(min( AP_R$x),max( AP_R$x))
+                                    xlim=c(min(PredictedAnnualConcentrationTS$x),max(PredictedAnnualConcentrationTS$x))
                                    )
                                axis(4)
                                par(new=TRUE)  
                         }
 
-                  chemoGraphicTable[,chemical+2]<-AP_R$y
+                  chemoGraphicTable[,chemical+2]<-PredictedAnnualConcentrationTS$y
                   
-                  iD[counter,1]<-ModelRandom$Stats[1]
-                  iD[counter,2]<-NSE(sim=ModelRandom$OaP1[,2],obs=ModelRandom$OaP1[,1])
-                  iD[counter,3:6]<-OB(ModelRandom$OaP1[,1],ModelRandom$OaP1[,2],fitEval,fitFile,fitFileOut)
-                  iD[counter,7:10]<-OB(ModelRandom$OaP2[,1],ModelRandom$OaP2[,2],fitEval,fitFile,fitFileOut)
-                  iD[counter,15:29]<-ModelRandom$Stats
+                  iD[counter,1]<-ModelConcentration$Stats[1]
+                  if(subsetRate>0){
+                        iD[counter,2]<-NSE(sim=ModelConcentration$OaP1[,2],obs=ModelConcentration$OaP1[,1])
+                        iD[counter,3:6]<-OB(ModelConcentration$OaP1[,1],ModelConcentration$OaP1[,2],fitEval,fitFile,fitFileOut)
+                        iD[counter,7:10]<-OB(ModelConcentration$OaP2[,1],ModelConcentration$OaP2[,2],fitEval,fitFile,fitFileOut)
+                        }
+                  if(subsetRate==0){
+                        iD[counter,2]<-NSE(sim=ModelConcentration$ObservedAndPredicted[,2],obs=ModelConcentration$ObservedAndPredicted[,1])
+                        iD[counter,3:6]<-OB(ModelConcentration$ObservedAndPredicted[,1],ModelConcentration$ObservedAndPredicted[,2],fitEval,fitFile,fitFileOut)
+                  }
+                  iD[counter,15:29]<-ModelConcentration$Stats
+                  iD[counter,30]<-subsetRate
 if(i==1){
-plot(as.POSIXct(AP_R$x,origin="1970-01-01 00:00:00"),
-     AP_R$y,type="l",col=rainbow(10)[i],
+plot(as.POSIXct(PredictedAnnualConcentrationTS$x,origin="1970-01-01 00:00:00"),
+     PredictedAnnualConcentrationTS$y,type="l",col=rainbow(10)[i],
      main=chemicals[chemical],
-     ylim=c(min(AP_R$y),max( AP_R$y)),
-     xlim=c(min( AP_R$x),max( AP_R$x)),
+     ylim=c(min(PredictedAnnualConcentrationTS$y),max(PredictedAnnualConcentrationTS$y)),
+     xlim=c(min(PredictedAnnualConcentrationTS$x),max(PredictedAnnualConcentrationTS$x)),
      xlab="date",
      ylab=paste(chemicals[chemical],"concentration",sep=" ")
-)
+     )
 }
 else{
-  points(as.POSIXct(AP_R$x,origin="1970-01-01 00:00:00"),
-          AP_R$y,type="l",col=rainbow(10)[i]
-)
+  points(as.POSIXct(PredictedAnnualConcentrationTS$x,origin="1970-01-01 00:00:00"),
+          PredictedAnnualConcentrationTS$y,type="l",col=rainbow(10)[i]
+        )
 }
-
-                  #print(i)
-
 
 counter<-counter+1
 
 }
-source("C:/Users/FBlab/Documents/GitHub/Brittany/makePlots.R", echo=FALSE)
+
+#source("C:/Users/FBlab/Desktop/Brittany/makePlots.R", echo=FALSE)
 
 
 

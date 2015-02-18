@@ -43,11 +43,15 @@ if(fileType==4){
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
         #SUBSET THE FINGERPRINT DATA THAT WE ARE HOPING TO MODEL
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
-        #rough first pass cut
+        #rough first pass cut only flanked by the deployment dates (more or less)
             subsetRealTime<-(realTime[realTime>startDate&realTime<stopDate])
             subsetFingerPrints<-fingerPrints[(realTime>startDate&realTime<stopDate) ,]
+        #but it isn't necessarily exactly within the range we specified, so, lets get the correct range here
+            startDate<-min(subsetRealTime[!is.na(subsetRealTime)])
+            stopDate<-max(subsetRealTime[!is.na(subsetRealTime)])
         
-        #identify the window of GOOOD data (excuding the fouling)
+
+      #identify the window of GOOOD data (excuding the fouling)
             goodStart<-as.POSIXct(paste("2010-11-18 00:00:00",sep=""),tz="UTC")
             goodStop<-as.POSIXct(paste("2011-05-1 00:00:00",sep=""),tz="UTC")
             
@@ -59,12 +63,12 @@ if(fileType==4){
                     realTime>good2Start&realTime<good2Stop )
 
           #here the 2 indicates that it is the second round of time-subsetting
-            subsetRealTime2<-realTime[bar]
-            subsetFingerPrints2<-fingerPrints[bar,]
+              subsetRealTime2<-realTime[bar]
+              subsetFingerPrints2<-fingerPrints[bar,]
 
-  #but it isn't exactly within the range we specified, so, lets get the correct range here
-            startDate<-min(useUs[!is.na(useUs)])
-            stopDate<-max(useUs[!is.na(useUs)])
+      #but it isn't exactly within the range we specified, so, lets get the correct range here
+            startDate2<-min(subsetRealTime2[!is.na(subsetRealTime2)])
+            stopDate2<-max(subsetRealTime2[!is.na(subsetRealTime2)])
 
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
@@ -106,18 +110,18 @@ if(fileType==4){
   #REMOVE ALL NAN POINTS from 2 different datasets
   #first a group that are not filtered for quality
         fp<-cbind(calibrationRealTime,calibrationFingerPrints,as.matrix(calibrationAnalytes[,chemN[chemical]]))
-        foo<-fp[complete.cases(fp[,2:dim(fp)[2]]),] #removes all the rows for which there is a NA--keeping time in there
-        calibrationRealTime<-foo[,1]                      #pull components back out
-        calibrationAnalytes<-foo[,dim(foo)[2]]
-        calibrationFingerPrints<-foo[,-1] 
+        goodData<-fp[complete.cases(fp[,2:dim(fp)[2]]),] #removes all the rows for which there is a NA--keeping time in there
+        calibrationRealTime<-goodData[,1]                      #pull components back out
+        calibrationAnalytes<-goodData[,dim(goodData)[2]]
+        calibrationFingerPrints<-goodData[,-1] 
         calibrationFingerPrints<-calibrationFingerPrints[,-dim(calibrationFingerPrints)[2]]
 
     #second a group that have been subsetted more agressively
         fp<-cbind(calibrationRealTime2,calibrationFingerPrints2,as.matrix(calibrationAnalytes2[,chemN[chemical]]))
-        foo<-fp[complete.cases(fp[,2:dim(fp)[2]]),] #removes all the rows for which there is a NA--keeping time in there
-        calibrationRealTime2<-foo[,1]                      #pull components back out
-        calibrationAnalytes2<-foo[,dim(foo)[2]]
-        calibrationFingerPrints2<-foo[,-1] 
+        goodData<-fp[complete.cases(fp[,2:dim(fp)[2]]),] #removes all the rows for which there is a NA--keeping time in there
+        calibrationRealTime2<-goodData[,1]                      #pull components back out
+        calibrationAnalytes2<-goodData[,dim(goodData)[2]]
+        calibrationFingerPrints2<-goodData[,-1] 
         calibrationFingerPrints2<-calibrationFingerPrints2[,-dim(calibrationFingerPrints2)[2]]
         
 
