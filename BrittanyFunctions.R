@@ -4,6 +4,7 @@
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 #
+britFuncLoaded<-1
 densityDependentSubset<-function(ChemConc,realTime,fingerPrint,subsetRatio,Replace){
               #ChemConc a vector of chemical concentrations for each fingerprint
               #fingerPrint uv/Vis values
@@ -311,35 +312,37 @@ PLSRFitAndTestNoNSE<-function(fingerPrint,ChemConc,realTime,numParameters,fitEva
   #assemble so complete cases keeps time data organized
   fingerPrint<-cbind(realTime,fingerPrint,as.matrix(ChemConc))                          #bind the two matrices together to determine complete cases
   fingerPrint<-fingerPrint[complete.cases(fingerPrint[,2:dim(fingerPrint)[2]]),]        #removes all the rows for which there is a NA--keeping time in there
-  
-  
-  
+    
   #pull apart again
   ChemConc<-as.matrix(fingerPrint[,dim(fingerPrint)[2]])                       #strip off the chemConc again
   
   if(subsample==0){
     Stats<-matrix(nrow=1,ncol=5)
     colnames(Stats)<-c("n","r2","rmse","nrmse","slope")
+    RealTime<-as.matrix(fingerPrint[,1])                        #complete cases realtime
+    fingerPrint<-fingerPrint[,-dim(fingerPrint)[2]]  #complete cases fingerprints (remove chemConc)
+    fingerPrint<-fingerPrint[,-1]                    #complete cases fingerprints (remove RealTime)
+    
   }
   
   if(subsample > 0){#enter density dependent subsampling with Subsample Value guiding the process
-    #How about using native HIST function with Sturgess, scott and DF methods for breaking.
-    #Then, if possible take 1 point from each bin
-    #histKyle<-hist(ChemConc,breaks=steps, plot=FALSE)
-    #histSturges<-hist(ChemConc,breaks="Sturges")
-    #histScott<-hist(ChemConc,breaks="Scott",plot=FALSE)
     Stats<-matrix(nrow=1,ncol=15)
     colnames(Stats)<-c("n","r2","rmse","nrmse","slope","n","r2","rmse","nrmse","slope","n","r2","rmse","nrmse","slope")
-    Histogram<-hist(ChemConc,breaks="FD",plot=FALSE)
+    Histogram<-hist(ChemConc,breaks="FD",plot=TRUE)
     
     sampleRatio<-subsample
     count<-0
     # fingerPrint1<-fingerPrint[order(fingerPrint[,dim(fingerPrint)[2]]),] #SORTED IN ASCENDING ORDER
     for (q in seq(1,(length(Histogram$breaks)-1),1)){
-      #for (q in seq((length(Histogram$breaks)-1)*0.25,(length(Histogram$breaks)-1),1)){
+      #for each histogram bin, make a list of fingerPrints
       inTheBin<-fingerPrint[(ChemConc>=Histogram$breaks[q])&(ChemConc<=Histogram$breaks[q+1]),]
+      #print(inTheBin)
+      #estimate the number of samples from that bin (rounding up here)
       sampleNum<-sum(ceiling(Histogram$counts[q]*sampleRatio))
-      someNumber<-inTheBin[sample(1:dim(inTheBin)[1],sampleNum,replace=TRUE),]
+      #print(sampleNum)
+      #collect that number of samples from the bin
+      someNumber<-inTheBin[sample(1:dim(inTheBin)[1],sampleNum,replace=FALSE),]
+     # print(someNumber)
       if(count==0){
         calibration<-someNumber
       }
@@ -347,14 +350,19 @@ PLSRFitAndTestNoNSE<-function(fingerPrint,ChemConc,realTime,numParameters,fitEva
         calibration<-rbind(calibration,someNumber)
       }
       count<-count+1
+    #  readline()
     }
     remove(someNumber)
     
     
     calibrationChemConc<-(calibration[,dim(calibration)[2]])
+    #print(calibrationChemConc)
     calibrationRealTime<-as.matrix(calibration[,1]) 
+    #print(calibrationRealTime)
     calibrationFingerPrint<-calibration[,-1]
     calibrationFingerPrint<-calibrationFingerPrint[,-dim(calibrationFingerPrint)[2]]
+    
+    
     
     RealTime<-as.matrix(fingerPrint[,1])                        #complete cases realtime
     fingerPrint<-fingerPrint[,-dim(fingerPrint)[2]]  #complete cases fingerprints (remove chemConc)
@@ -369,8 +377,11 @@ PLSRFitAndTestNoNSE<-function(fingerPrint,ChemConc,realTime,numParameters,fitEva
                            ncomp=numParameters,type=c("response"))
         fitQualityModel<-OB(calibrationChemConc,calibPredict1,fitEval,fitFile,fitFileOut)
         op1<-cbind(calibrationChemConc,calibPredict1,calibrationRealTime)
+        colnames(op1)<-c("observed","predicted","realTime")
+   #    print(op1[1:10,])
         fitStats<-summary(lm(calibrationChemConc~calibPredict1))
         confInt<-predict(lm(calibrationChemConc~calibPredict1),interval='prediction',level=0.95)
+    
     Stats[1]<-fitStats$df[2]
     Stats[2]<-fitStats$r.squared
     Stats[3]<-rmse(obs=as.matrix(calibrationChemConc),sim=as.matrix(calibPredict1))
@@ -381,7 +392,10 @@ PLSRFitAndTestNoNSE<-function(fingerPrint,ChemConc,realTime,numParameters,fitEva
     calibPredict2<-predict(calibrationFit,data.matrix(fingerPrint),ncomp=numParameters,type=c("response"))
         fitQualityModelFull<-OB(ChemConc,calibPredict2,fitEval,fitFile,fitFileOut)
         op2<-cbind(ChemConc,calibPredict2,RealTime)
-    
+        indx<-op2[,3]%in%op1[,3]
+        op2<-cbind(op2,indx)
+        colnames(op2)<-c("observed","predicted","realTime","calib")
+    #print(op2[1:10,])
         fitStats<-summary(lm(ChemConc~calibPredict2))
         confInt<-predict(lm(ChemConc~calibPredict2),interval='prediction',level=0.95)
     Stats[6]<-fitStats$df[2]
@@ -390,10 +404,10 @@ PLSRFitAndTestNoNSE<-function(fingerPrint,ChemConc,realTime,numParameters,fitEva
     Stats[9]<-nrmse(obs=as.matrix(ChemConc),sim=as.matrix(calibPredict2))
     Stats[10]<-fitStats$coefficients[2,1] #slope
   }#end if subsample>0
-  RealTime<-as.matrix(fingerPrint[,1])                        #complete cases realtime
-  fingerPrint<-fingerPrint[,-dim(fingerPrint)[2]]  #complete cases fingerprints (remove chemConc)
-  fingerPrint<-fingerPrint[,-1]                    #complete cases fingerprints (remove RealTime)
   
+  
+  
+ 
   
   #run PLSR Model for all available data
   Fit<-plsr(ChemConc~data.matrix(fingerPrint),ncomp=numParameters,validation="CV")  #PLSR model to predict chemConc with cross validation
@@ -401,6 +415,10 @@ PLSRFitAndTestNoNSE<-function(fingerPrint,ChemConc,realTime,numParameters,fitEva
  
   #fitQualityFull<-OB(ChemConc,Predict,fitEval,fitFile,fitFileOut)
   op3<-cbind(ChemConc,Predict,RealTime)
+  colnames(op3)<-c("observed","predicted","realTime")
+ # print(op3[1:10,])
+  
+  
   
   if(subsample>0){
     fitStats<-summary(lm(ChemConc~Predict))
@@ -425,7 +443,7 @@ PLSRFitAndTestNoNSE<-function(fingerPrint,ChemConc,realTime,numParameters,fitEva
     return (list(Fit=Fit,ObservedAndPredicted=op3,Stats=Stats))
   }
   if (subsample>0){
-    return (list(FitAll=Fit,Fit=calibrationFit,OaP1=op1,OaP2=op2,ObservedAndPredicted=op3,Stats=Stats))
+    return (list(FitAll=Fit,Fit=calibrationFit,OaP1=op1,OaP2=op3,ObservedAndPredicted=op2,Stats=Stats))
     
   }
   
@@ -528,7 +546,7 @@ subsetSpecData<-function(fileType,dataType,startDates,stopDates,chem){
   }
   
   if(dataType=="calibration"){
-    output<-subset(myData,dataType,startDates,stopDates)
+    output<-subset(myData,dataType,startDates,stopDates,chem)
   }
 return(output)  
 }
@@ -559,7 +577,7 @@ subset<-function(data,type,startDates,stopDates,chem=NULL){
     
     
     
-    return(list(realTime=realTime,fingerPrints=fingerprint,ChemData=ChemData))
+    return(list(realTime=realTime,fingerPrints=fingerprints,ChemData=ChemData))
     #returnStatement
   }
   

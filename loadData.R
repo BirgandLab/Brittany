@@ -24,8 +24,8 @@
       flow<-flow[,-1:-2]
   
       #remove any missing data
-      flow<-flow[complete.cases(flow$flow),]
-      flow<-flow[complete.cases(flow$realTime),]# removes all the rows for which there is a NA--keeping time in there
+      Flow<-flow[complete.cases(flow$flow),]
+      Flow<-flow[complete.cases(flow$realTime),]# removes all the rows for which there is a NA--keeping time in there
 
       #plot(flow$realTime,flow$flow,type="l")
 

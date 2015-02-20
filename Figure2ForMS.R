@@ -85,21 +85,22 @@ source("C:/Users/FBlab/Desktop/Brittany/loadData.R", echo=FALSE)
 #*******************************Specify Parameters for a Single Run**************************************#
 #*******************************************************************************************************************/  
 #*******************************************************************************************************************/
-  
+startDate<-as.POSIXct(paste("2010-10-01 00:00:00",sep=""),tz="UTC") #jan 1 2010
+stopDate<-as.POSIXct(paste("2011-07-30 00:00:00",sep=""),tz="UTC")    #june 15 2011  
+
 
   chemical<-6   #chemical chemicals<-c("DIC","DOC","MES","NO3","PPO43","PTOT","SO4","TURB","CL",                                    #"NO2","NTOT","NTOTFILT","NH4")#,"SILICA")
   numComp<-4    #specify number of components to use in the model
-  fileType<-1   #specify file TYPE 1-REGFP 2-1STDER 3-TURBCOMP 4-1STDERTURBCOMP 
-  subsetRate=0
+  fileType<-"original"   #specify file TYPE 1-REGFP 2-1STDER 3-TURBCOMP 4-1STDERTURBCOMP 
+  subsetRate=0.5
                   #   #mfN<-c(1,2,4,2,2,3,4,2,2,2,3,2,3)#,2)
-  o<-0      #points to drop from the front of a calibration
-  s<-0     #points to drop from the back end
 
-  #make a record of the parameters used
-  iD[counter,11:14]<-c(numComp,chemical,fileType,o)
 
-calibration<-subsetSpecData("original","calibration",startDate,stopDate,chemN[chemical])
-specDataToModel<-subsetSpecData("original","fingerPrints",startDate,stopDate)
+#make a record of the parameters used
+iD[counter,11:14]<-c(numComp,chemical,fileType,0)
+calibration<-subsetSpecData(fileType,"calibration",startDate,stopDate,chemN[chemical])
+
+specDataToModel<-subsetSpecData(fileType,"fingerPrints",startDate,stopDate)
 flow<-subset(flow,"flow",startDate,stopDate)
                  
 for(i in 1:1){
@@ -114,8 +115,9 @@ for(i in 1:1){
                                          as.matrix(specDataToModel$fingerPrints),
                                          ncomp=numComp,
                                          type=c("response"))  
-                          
-    #have updated things up to here--now need to do just a little bit more to smooth the rest of this over, and 
+#**************************************************************
+#**************************************************************
+#have updated things up to here--now need to do just a little bit more to smooth the rest of this over, and 
     #perhaps there will be a functioning tool out of the whole thing.
 
                     PredictedAnnualConcentrationTS<-as.data.frame(approx(subsetRealTime,PredictedConcentration,n=totmin+1)) #create a time series of [ ] at 1 minute intervals for the whole dataset
