@@ -125,11 +125,59 @@ Types<-c("original","1stDer","turbComp","1stDerTurbComp")
 #come back and change
 #the chemical number to 1:9
 #and the dates
-for(y in 1:length(startDates)){
+
+for(y in 1:4){#for each year
+  if (y==1){
+        startDates<-c(as.POSIXct(paste("2010-11-18 00:00:00",sep=""),tz="UTC"),
+                      as.POSIXct(paste("2011-04-25 00:00:00",sep=""),tz="UTC")
+        )
+        stopDates<-c(as.POSIXct(paste("2011-03-01 00:00:00",sep=""),tz="UTC"),
+                     as.POSIXct(paste("2011-05-20 00:00:00",sep=""),tz="UTC")
+        )
+    }
+  if (y==2){
+    startDates<-c(as.POSIXct(paste("2011-10-18 00:00:00",sep=""),tz="UTC"),
+                 as.POSIXct(paste("2012-3-2 00:00:00",sep=""),tz="UTC")
+                 )
+    stopDates<-c(as.POSIXct(paste("2012-2-8 00:00:00",sep=""),tz="UTC"),
+                as.POSIXct(paste("2012-06-01 00:00:00",sep=""),tz="UTC")
+                )
+    }
   
-          startDate<-startDates[y]
-          stopDate<-stopDates[y]
-          flow<-subset(Flow,"flow",startDate,stopDate)
+  if (y==3){
+    startDates<-c(as.POSIXct(paste("2012-10-18 00:00:00",sep=""),tz="UTC"),
+                  as.POSIXct(paste("2013-3-2 00:00:00",sep=""),tz="UTC")
+    )
+    stopDates<-c(as.POSIXct(paste("2013-3-2 00:00:00",sep=""),tz="UTC"),
+                 as.POSIXct(paste("2013-07-01 00:00:00",sep=""),tz="UTC")
+    )
+    
+  }
+  if (y==4){
+    startDates<-c(as.POSIXct(paste("2010-11-18 00:00:00",sep=""),tz="UTC"),
+                  as.POSIXct(paste("2011-04-25 00:00:00",sep=""),tz="UTC"),
+                  as.POSIXct(paste("2011-10-18 00:00:00",sep=""),tz="UTC"),
+                  as.POSIXct(paste("2012-3-2 00:00:00",sep=""),tz="UTC"),
+                  as.POSIXct(paste("2012-10-18 00:00:00",sep=""),tz="UTC"),
+                  as.POSIXct(paste("2013-3-2 00:00:00",sep=""),tz="UTC")           
+                  )
+    stopDates<-c(as.POSIXct(paste("2011-03-01 00:00:00",sep=""),tz="UTC"),
+                 as.POSIXct(paste("2011-05-20 00:00:00",sep=""),tz="UTC"),
+                 as.POSIXct(paste("2012-2-8 00:00:00",sep=""),tz="UTC"),
+                 as.POSIXct(paste("2012-06-01 00:00:00",sep=""),tz="UTC"),
+                 as.POSIXct(paste("2013-3-2 00:00:00",sep=""),tz="UTC"),
+                 as.POSIXct(paste("2013-07-01 00:00:00",sep=""),tz="UTC")
+                 
+    ) 
+    
+  }
+    
+    
+    
+          startDate<-min(startDates)
+          stopDate<-max(stopDates)
+          
+          flow<-subset(Flow,"flow",startDates,stopDates)
         for(chemical in 1:9){
                   for(numComp in 3:11){
                   #numComp<-4    #specify number of components to use in the model
@@ -141,9 +189,10 @@ for(y in 1:length(startDates)){
                           iD[counter,2]<-fileType
                           iD[counter,3]<-numComp
                           iD[counter,4]<-subsetRate
-                        
-                        calibration<-subsetSpecData(fileType,"calibration",startDate,stopDate,chemN[chemical])
-                        specDataToModel<-subsetSpecData(fileType,"fingerPrints",startDate,stopDate)
+                          iD[counter,30]<-Chem[chemN[chemical]]
+                        #change here to send vector of startDates and stopDate
+                        calibration<-subsetSpecData(fileType,"calibration",startDates,stopDates,chemN[chemical])
+                        specDataToModel<-subsetSpecData(fileType,"fingerPrints",startDates,stopDates)
                         
                      
                                          
@@ -206,6 +255,7 @@ for(y in 1:length(startDates)){
                                   
                                             mtext(paste(fileType,numComp,startDate,sep="   "))
                                   }
+                                  
                                           dev.off()
                                           #  }
 #                                       else{
@@ -220,6 +270,7 @@ for(y in 1:length(startDates)){
                         }#end for each fileTYpe
                 }#end for #componenets
         }#end for each chemical
+
 }#end for each year
 
 

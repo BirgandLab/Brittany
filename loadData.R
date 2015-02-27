@@ -4,6 +4,7 @@
 #*******************************************************************************************************************/  
 #*******************************************************************************************************************/
 #load and condition flow data
+message("load flow data")
       flow1<-read.table(file=paste(flowPath,"Débit Kervidy Naizin 2010-2012.txt",sep=""),
                      skip=1,sep=";",dec=",",na.strings="---")
       
@@ -55,31 +56,39 @@
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%Load the unmodified finger print records %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 #load the calibration fingerprints with their associated lab data
+       message("load calibration data")
         originalmyData<-loadDataFile(CalibrationFingerPrintsPath,ModelFilename[1])   
                     #returns a list with objects  $realTime $ChemData and $fingerPrints 
 #load the fingerprint data file for each year
+       message("load fingerprints for prediction")
         original<-loadFingerPrints(FingerPrintPath,filename,"original")
                     #returns a list with $realTime and $fingerprints
 
       
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 #load 1stDerivative calibration data and observation fingerprints
+message("load calibration data first derivative")
         DermyData<-loadDataFile(CalibrationFingerPrintsPath,ModelFilename[2])
                     #returns an object with    $realTime $ChemData and $fingerPrints
+message("load fingerprint for predictions")
         Derivative<-loadFingerPrints(FingerPrintPath,filename,"1stDerivative")
                     #returns a list with $realTime and $fingerprints
 
       
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 #load turbidity compensated calibration data and fingerprints
+message("load calibration data turbidity compensated")
         TCmyData<-loadDataFile(CalibrationFingerPrintsPath,ModelFilename[3])   
                     #returns an object with $realTime $ChemData and $fingerPrints 
+message("load fingerprints for prediction")
         TurbidityCompensated<-loadFingerPrints(FingerPrintPath,filename,"TurbidityCompensated")
 
       
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 #load 1stDer Turb Comp
+message("load calibration data turbidity compensated first derivative")
         TC1DmyData<-loadDataFile(CalibrationFingerPrintsPath,ModelFilename[4])   
                     #returns an object with    $realTime $ChemData and $fingerPrints 
+message("load fingerprints for prediction")
         FstDerivativeTurbidityCompensated<-loadFingerPrints(FingerPrintPath,filename,"1stDerivativeTurbidityCompensated")
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#

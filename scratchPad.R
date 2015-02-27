@@ -1,3 +1,92 @@
+#lets have a generic function for loading data
+#it needs a filepath--to calibration data
+#it needs a filename
+#it needs a fileType
+#it needs a list of columns with chem Data
+#it needs a list of columns with NaN data (wavelengths that don't read)
+#well, it doesn't really need the last part, as we can find those columns
+#it might benefit from specification of a timezone
+#OUTPUTS
+#return a matrix of 
+#	realTime 		-- as POSIX object with timezone specified
+#	labData 		-- IF LAB DATA COLS ARE SPECIFIED
+#	fingerPrints	-- with columns containing data
+#     start and stop time in a vector
+#	summary stats for each lab analyte  --IF LAB DATA COLS ARE SPECIFIED
+#	an indicator of the type of file it was supposed to have been ie fingerprint, firstderivative, turbiditycompensated, or turbiditycompensatedfirstderivative
+#
+#can we use the same thing for loading fingerprint data without chemData?
+#labDataCols==NULL
+loadGeneric<-function(filepath=filepath,filename=filename,fileType=fileType,
+				labDataCols=labDataCols,analytenames=NULL,timezone="UTC"){
+
+   data<-read.table(file=paste(filepath,filename,sep=""),sep=",",header=TRUE,skip=0)
+   
+   realTime<-strptime(data[,1],'%d/%m/%Y %H:%M:%S',tz=timezone)
+   #if there is no time for an observation, we will disregard it
+   		hasTime<-complete.cases(realTime)
+   		realTime<-realTime[hasTime]
+		data<-data[hasTime,]
+   
+if(labDataCols[1]!=0){
+		   labData<-data[,labDataCols]
+		  #drop lab data from matrix
+  		   data<-data[,-min(labDataCols):-dim(data)[2]]
+ 		 #calculate some stas on lab data
+  		     labDataStats<-rbind(colMeans(labData,na.rm=TRUE),
+			    apply(labData,2,function(x) min(x,na.rm=TRUE)),
+			    apply(labData,2,function(x) max(x,na.rm=TRUE)),
+			    apply(labData,2,function(x) sum(!is.na(x)))
+				)  
+		  	rownames(labDataStats)<-c("mean","min","max","count") 
+	}
+
+  #drop realTime, and OK columns from beginning of matrix
+  	data<-data[,-1:-2]
+  #find columns without any fingerprint data in them
+      nanCount<-apply(data,2,function(x) sum(is.na(x))) #calculate the total number of NaNs in a column
+	numberOfRows<-dim(data)[1]  			    #figure out how many empty columns there are
+	NanColumns<-nanCount>=(numberOfRows*0.99)         #here is a logical vector of ~empty columns
+  #drop them 
+      fingerPrints<-data[,-NanColumns]    
+
+  dateRange<-c(min(realTime),max(realTime))
+  
+if(labDataCols[1]!=0){
+		return(list(realTime=realTime, 
+			labData=labData, 
+			fingerPrints=fingerPrints,
+			stats=labDataStats,
+            	dateRange=dateRange,
+			fileType=fileType,
+			dataType="calibration"
+			))
+		}
+return(list(realTime=realTime, 
+			fingerPrints=fingerPrints,
+            	dateRange=dateRange,
+			fileType=fileType,
+			dataType="fingerprint"
+			))
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #smaller window
 #plot one week at a time
 #make vertical line for noon and midnight
