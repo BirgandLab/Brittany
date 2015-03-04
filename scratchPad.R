@@ -1,3 +1,87 @@
+#2010-2011 points
+
+
+#2010 breaks
+startDates<-c(as.POSIXct(paste("2010-11-18 00:00:00",sep=""),tz="UTC"),
+                  as.POSIXct(paste("2011-04-25 00:00:00",sep=""),tz="UTC")
+)
+stopDates<-c(as.POSIXct(paste("2011-03-01 00:00:00",sep=""),tz="UTC"),
+                 as.POSIXct(paste("2011-05-20 00:00:00",sep=""),tz="UTC")
+                 )
+
+
+#2011 breaks
+startDates<-c(as.POSIXct(paste("2011-10-18 00:00:00",sep=""),tz="UTC"))
+stopDates<-c(as.POSIXct(paste("2011-07-01 00:00:00",sep=""),tz="UTC"))
+
+
+
+
+
+
+
+
+
+
+trimCalibOrig<-subset(originalmyData,"calibration",trimStartDates,trimStopDates,chem=NULL)
+trimCalib1Der<-subset(DermyData,"calibration",trimStartDates,trimStopDates,chem=NULL)
+trimCalibTC<-subset(TCmyData,"calibration",trimStartDates,trimStopDates,chem=NULL)
+trimCalib1DerTC<-subset(TC1DmyData,"calibration",trimStartDates,trimStopDates,chem=NULL)
+
+
+
+
+good3Start<-
+good3Stop<-as.POSIXct(paste("2012-04-24 00:00:00",sep=""),tz="UTC")
+
+good4Start<-as.POSIXct(paste("2012-05-05 00:00:00",sep=""),tz="UTC")
+good4Stop<-as.POSIXct(paste("2012-06-01 00:00:00",sep=""),tz="UTC")
+
+good5Start<-as.POSIXct(paste("2012-06-28 00:00:00",sep=""),tz="UTC")
+good5Stop<-as.POSIXct(paste("2012-07-10 00:00:00",sep=""),tz="UTC")
+
+good6Start<-as.POSIXct(paste("2012-10-20 00:00:00",sep=""),tz="UTC")
+good6Stop<-as.POSIXct(paste("2013-03-27 00:00:00",sep=""),tz="UTC")
+
+good7Start<-as.POSIXct(paste("2013-10-20 00:00:00",sep=""),tz="UTC")
+good7Stop<-as.POSIXct(paste("2014-04-05 00:00:00",sep=""),tz="UTC")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #lets have a generic function for loading data
 #it needs a filepath--to calibration data
 #it needs a filename

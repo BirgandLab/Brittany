@@ -59,6 +59,8 @@ message("load flow data")
        message("load calibration data")
         originalmyData<-loadDataFile(CalibrationFingerPrintsPath,ModelFilename[1])   
                     #returns a list with objects  $realTime $ChemData and $fingerPrints 
+        prunedO<-loadDataFile(CalibrationFingerPrintsPath,ModelFilename[1],excludeRows) 
+
 #load the fingerprint data file for each year
        message("load fingerprints for prediction")
         original<-loadFingerPrints(FingerPrintPath,filename,"original")
@@ -70,6 +72,7 @@ message("load flow data")
 message("load calibration data first derivative")
         DermyData<-loadDataFile(CalibrationFingerPrintsPath,ModelFilename[2])
                     #returns an object with    $realTime $ChemData and $fingerPrints
+        pruned1D<-loadDataFile(CalibrationFingerPrintsPath,ModelFilename[2],excludeRows) 
 message("load fingerprint for predictions")
         Derivative<-loadFingerPrints(FingerPrintPath,filename,"1stDerivative")
                     #returns a list with $realTime and $fingerprints
@@ -79,6 +82,7 @@ message("load fingerprint for predictions")
 #load turbidity compensated calibration data and fingerprints
 message("load calibration data turbidity compensated")
         TCmyData<-loadDataFile(CalibrationFingerPrintsPath,ModelFilename[3])   
+        prunedTC<-loadDataFile(CalibrationFingerPrintsPath,ModelFilename[3],excludeRows) 
                     #returns an object with $realTime $ChemData and $fingerPrints 
 message("load fingerprints for prediction")
         TurbidityCompensated<-loadFingerPrints(FingerPrintPath,filename,"TurbidityCompensated")
@@ -87,7 +91,8 @@ message("load fingerprints for prediction")
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 #load 1stDer Turb Comp
 message("load calibration data turbidity compensated first derivative")
-        TC1DmyData<-loadDataFile(CalibrationFingerPrintsPath,ModelFilename[4])   
+        TC1DmyData<-loadDataFile(CalibrationFingerPrintsPath,ModelFilename[4])
+        prunedTC1D<-loadDataFile(CalibrationFingerPrintsPath,ModelFilename[4],excludeRows) 
                     #returns an object with    $realTime $ChemData and $fingerPrints 
 message("load fingerprints for prediction")
         FstDerivativeTurbidityCompensated<-loadFingerPrints(FingerPrintPath,filename,"1stDerivativeTurbidityCompensated")

@@ -67,9 +67,8 @@ densityDependentSubset<-function(ChemConc,realTime,fingerPrint,subsetRatio,Repla
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 
-loadDataFile<-function(filepath,filename){
+loadDataFile<-function(filepath,filename,excluderows=0){
               data<-read.table(file=paste(filepath,filename,sep=""),sep=",",header=TRUE,skip=0)
-              
               #parse the date
               Date<-substr(data$DateScan, 1, 10)        #the date
               T<-substr(data$DateScan, 12, 19)       #the time
@@ -77,10 +76,18 @@ loadDataFile<-function(filepath,filename){
               D<-paste(Date,T,sep=" ")               #put back in the fixed values
               D<-strptime(D, '%d/%m/%Y %H:%M:%S',tz="UTC")    #convert it to a _flawless_ time opject
               data$DateScan<-D                       #store it back in the matrix
-              
-              realTime<-(data$DateScan)                                       #pull out time
-              ChemData<-data[,(dim(data)[2]-16):(dim(data)[2])]            #pull out the analyte data
-              fingerPrints<-data[,-(dim(data)[2]-20):-(dim(data)[2])]    #remove chemical data and the 4 columns of NaNs in 742.5-750 nM bins
+              #I am using status to idenfity calibration data that may be bad to used
+              #when status==NOT, drop data
+              if(excluderows>0){
+                keepThese<-!D%in%D[excludeRows]
+                }
+              else{
+                keepThese=seq(1:dim(data)[1])
+              }
+                #keepThese<-data[,2]!="NOT"
+              realTime<-(data$DateScan[keepThese])                                       #pull out time
+              ChemData<-data[keepThese,(dim(data)[2]-16):(dim(data)[2])]            #pull out the analyte data
+              fingerPrints<-data[keepThese,-(dim(data)[2]-20):-(dim(data)[2])]    #remove chemical data and the 4 columns of NaNs in 742.5-750 nM bins
               fingerPrints<-fingerPrints[,-1:-2]                      #remove status and datetime
               
               return(list(realTime=realTime, ChemData=ChemData, fingerPrints=fingerPrints))
@@ -279,7 +286,7 @@ if (subsample==0){
 OB<-function(observed,predicted,fitEval,fitFile,fitFileOut){
                 ObsAndPred<-cbind(observed,predicted)
                 write.table(ObsAndPred,file=fitFile, append = FALSE,row.names=FALSE,col.names=FALSE)
-                system(paste(fitEval,fitFile,sep=" "),wait=TRUE,show.output.on.console=FALSE)
+                system(paste(fitEval,fitFile,"jpg",sep=" "),wait=TRUE,show.output.on.console=FALSE)
                 
                 a<-readLines(fitFileOut)
                 #unlink(fitFileOut)
@@ -516,6 +523,11 @@ loadFingerPrints<-function(FingerPrintPath,filename,type){
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 
 subsetSpecData<-function(fileType,dataType,startDates,stopDates,chem){
+      if(fileType=="prunedO"){
+        data<-original
+        myData<-prunedO
+        
+      }
       if(fileType=="original"){
         data<-original
         myData<-originalmyData
@@ -525,16 +537,31 @@ subsetSpecData<-function(fileType,dataType,startDates,stopDates,chem){
         data<-Derivative
         myData<-DermyData
       }
+
+      if(fileType=="pruned1D"){
+        data<-Derivative
+        myData<-pruned1D
+      }
+      
       
       if(fileType=="turbComp"){
         data<-TurbidityCompensated
         myData<-TCmyData
+      }
+      if(fileType=="prunedTC"){
+        data<-TurbidityCompensated
+        myData<-prunedTC
       }
       
       if(fileType=="1stDerTurbComp"){
         data<-FstDerivativeTurbidityCompensated
         myData<-TC1DmyData
       }
+      if(fileType=="prunedTC1D"){
+        data<-FstDerivativeTurbidityCompensated
+        myData<-prunedTC1D
+      }
+      
      
   if(dataType=="fingerPrints"){
     output<-subset(data,dataType,startDates,stopDates)

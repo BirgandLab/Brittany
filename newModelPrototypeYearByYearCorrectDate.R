@@ -57,7 +57,7 @@ j<-1 #the number of times to run through each model style
 #*******************************************************************************************************************/  
 #******************************************************************************************************************/
 
-  iD<-matrix(nrow=2000,ncol=30)
+  iD<-matrix(nrow=6000,ncol=30)
 colnames(iD)<-c("chem","fileType","ncomp","subRatio",
                           "M_n","M_NSE",
                           "M_VG","M_G","M_A","M_B",
@@ -87,6 +87,9 @@ source("C:/Users/FBlab/Desktop/Brittany/BrittanyFunctions.R", echo=FALSE)
 if(!exists("flow",1)){
 source("C:/Users/FBlab/Desktop/Brittany/loadData.R", echo=FALSE)
 }
+
+excludeRows<-c(29,153,155,471,482,486,514,525,530,548.789,816,844)
+
 
 
 #*******************************************************************************************************************/
@@ -121,12 +124,15 @@ stopDates<-c(as.POSIXct(paste("2011-07-30 00:00:00",sep=""),tz="UTC"),
 
 #chemical<-2   #chemical chemicals<-c("DIC","DOC","MES","NO3","PPO43","PTOT","SO4","TURB","CL",                                    #"NO2","NTOT","NTOTFILT","NH4")#,"SILICA")
 
-Types<-c("original","1stDer","turbComp","1stDerTurbComp")  
+Types<-c("original","prunedO",
+         "1stDer","pruned1D",
+         "turbComp","prunedTC",
+         "1stDerTurbComp","prunedTC1D")  
 #come back and change
 #the chemical number to 1:9
 #and the dates
 
-for(y in 1:4){#for each year
+for(y in 2:2){#for each year
   if (y==1){
         startDates<-c(as.POSIXct(paste("2010-11-18 00:00:00",sep=""),tz="UTC"),
                       as.POSIXct(paste("2011-04-25 00:00:00",sep=""),tz="UTC")
@@ -179,7 +185,7 @@ for(y in 1:4){#for each year
           
           flow<-subset(Flow,"flow",startDates,stopDates)
         for(chemical in 1:9){
-                  for(numComp in 3:11){
+                  for(numComp in 5:5){
                   #numComp<-4    #specify number of components to use in the model
                       for(k in 1:length(Types)){
                           fileType<-Types[k]   #specify file TYPE 1-REGFP 2-1STDER 3-TURBCOMP 4-1STDERTURBCOMP 
@@ -189,11 +195,11 @@ for(y in 1:4){#for each year
                           iD[counter,2]<-fileType
                           iD[counter,3]<-numComp
                           iD[counter,4]<-subsetRate
-                          iD[counter,30]<-Chem[chemN[chemical]]
+                          iD[counter,30]<-chemical
                         #change here to send vector of startDates and stopDate
                         calibration<-subsetSpecData(fileType,"calibration",startDates,stopDates,chemN[chemical])
                         specDataToModel<-subsetSpecData(fileType,"fingerPrints",startDates,stopDates)
-                        
+                                    
                      
                                          
                             for(i in 1:1){
@@ -201,6 +207,26 @@ for(y in 1:4){#for each year
                                   #   output$modelQuality a named vector of summary characteristics for the model and its verification, 
                                   #     including NSE, r2 and fitEval for the model and, if applicable validation datasets
                                   #   output$PredictedConcentrations
+                              fitFile<-paste(fitPath,  
+                                             Chem[chemN[chemical]],
+                                             "_",
+                                             fileType,
+                                             "_",
+                                             numComp,
+                                             "_",
+                                             (as.POSIXlt(startDate))$year+1900,
+                                             "PLSR.in",sep=""
+                                             )
+                              fitFileOut<-paste(fitPath, 
+                                                Chem[chemN[chemical]],
+                                                "_",
+                                                fileType,
+                                                "_",
+                                                numComp,
+                                                "_",
+                                                (as.POSIXlt(startDate))$year+1900,
+                                                "PLSR_out.txt",sep=""
+                                                )
                                   modelOutput<-modelExecution(chemical,numComp,subsetRate,calibration,specDataToModel,fitEval,fitFile,fitFileOut)
                                   
                                           #          totmin<-max((modelOutput$PredictedConcentration[,1])-min(modelOutput$PredictedConcentration[,1]))/60
