@@ -81,6 +81,8 @@ colnames(iD)<-c("chem","fileType","ncomp","subRatio",
 #*******************************************************************************************************************/  
 #*******************************************************************************************************************/
 
+#excludeRows<-c(29,153,155,471,482,486,514,525,530,548.789,816,844)
+excludeRows<-c(29,153,155,471,482,486,514,525,530,548,615,616,617,652,658,660,668,671,673,735,790,817,831,845,902,911)
 if(!exists("britFuncLoaded",1)){
 source("C:/Users/FBlab/Desktop/Brittany/BrittanyFunctions.R", echo=FALSE)
 }
@@ -88,7 +90,6 @@ if(!exists("flow",1)){
 source("C:/Users/FBlab/Desktop/Brittany/loadData.R", echo=FALSE)
 }
 
-excludeRows<-c(29,153,155,471,482,486,514,525,530,548.789,816,844)
 
 
 
@@ -132,7 +133,7 @@ Types<-c("original","prunedO",
 #the chemical number to 1:9
 #and the dates
 
-for(y in 2:2){#for each year
+for(y in 3:3){#for each year
   if (y==1){
         startDates<-c(as.POSIXct(paste("2010-11-18 00:00:00",sep=""),tz="UTC"),
                       as.POSIXct(paste("2011-04-25 00:00:00",sep=""),tz="UTC")
@@ -185,7 +186,7 @@ for(y in 2:2){#for each year
           
           flow<-subset(Flow,"flow",startDates,stopDates)
         for(chemical in 1:9){
-                  for(numComp in 5:5){
+                  for(numComp in 3:9){
                   #numComp<-4    #specify number of components to use in the model
                       for(k in 1:length(Types)){
                           fileType<-Types[k]   #specify file TYPE 1-REGFP 2-1STDER 3-TURBCOMP 4-1STDERTURBCOMP 

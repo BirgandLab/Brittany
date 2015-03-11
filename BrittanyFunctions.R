@@ -67,19 +67,26 @@ densityDependentSubset<-function(ChemConc,realTime,fingerPrint,subsetRatio,Repla
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 
-loadDataFile<-function(filepath,filename,excluderows=0){
+loadDataFile<-function(filepath,filename,excluderows=0,timezone="UTC"){
               data<-read.table(file=paste(filepath,filename,sep=""),sep=",",header=TRUE,skip=0)
+              
+              realTime<-strptime(data[,1],'%d/%m/%Y %H:%M:%S',tz=timezone)
+              #if there is no time in the file for an observation, we will disregard it
+              #hasTime<-complete.cases(realTime)
+              #realTime<-realTime[hasTime]
+              #data<-data[hasTime,]
+              
               #parse the date
-              Date<-substr(data$DateScan, 1, 10)        #the date
-              T<-substr(data$DateScan, 12, 19)       #the time
-              T[T==""]="00:00:00"                    #ah, but where it should be midnight, often it was " "
-              D<-paste(Date,T,sep=" ")               #put back in the fixed values
-              D<-strptime(D, '%d/%m/%Y %H:%M:%S',tz="UTC")    #convert it to a _flawless_ time opject
-              data$DateScan<-D                       #store it back in the matrix
+              #Date<-substr(data$DateScan, 1, 10)        #the date
+              #T<-substr(data$DateScan, 12, 19)       #the time
+              #T[T==""]="00:00:00"                    #ah, but where it should be midnight, often it was " "
+              #D<-paste(Date,T,sep=" ")               #put back in the fixed values
+              #D<-strptime(D, '%d/%m/%Y %H:%M:%S',tz="UTC")    #convert it to a _flawless_ time opject
+              data$DateScan<-realTime                       #store it back in the matrix
               #I am using status to idenfity calibration data that may be bad to used
               #when status==NOT, drop data
               if(excluderows>0){
-                keepThese<-!D%in%D[excludeRows]
+                keepThese<-!realTime%in%realTime[excluderows]
                 }
               else{
                 keepThese=seq(1:dim(data)[1])
@@ -379,7 +386,7 @@ PLSRFitAndTestNoNSE<-function(fingerPrint,ChemConc,realTime,numParameters,fitEva
                   calibrationFit<-plsr(calibrationChemConc~data.matrix(calibrationFingerPrint),
                                        ncomp=numParameters,validation="CV")
                   
-                  #predict concentrations for the calibration (uninteresting)
+              #predict concentrations for the calibration (uninteresting)
                   calibPredict1<-predict(calibrationFit,data.matrix(calibrationFingerPrint),
                                          ncomp=numParameters,type=c("response"))
                       fitQualityModel<-OB(calibrationChemConc,calibPredict1,fitEval,fitFile,fitFileOut)
@@ -395,7 +402,7 @@ PLSRFitAndTestNoNSE<-function(fingerPrint,ChemConc,realTime,numParameters,fitEva
                   Stats[4]<-nrmse(obs=as.matrix(calibrationChemConc),sim=as.matrix(calibPredict1))
                   Stats[5]<-fitStats$coefficients[2,1] #slope
                   
-                  #predict concentrations for all available lab data
+      #predict concentrations for all available lab data
                   calibPredict2<-predict(calibrationFit,data.matrix(fingerPrint),ncomp=numParameters,type=c("response"))
                       fitQualityModelFull<-OB(ChemConc,calibPredict2,fitEval,fitFile,fitFileOut)
                       op2<-cbind(ChemConc,calibPredict2,RealTime)
@@ -573,54 +580,54 @@ subsetSpecData<-function(fileType,dataType,startDates,stopDates,chem){
 return(output)  
 }
 
+# 
+# subset<-function(data,type,startDates,stopDates,chem=NULL){
+#   
+#   logicalIndexofInclusion<-matrix(nrow=length(data$realTime),ncol=length(startDates))
+#   
+#   for(i in 1:length(startDates)){
+#     logicalIndexofInclusion[,i]<-(data$realTime>startDates[i]&data$realTime<stopDates[i])
+#   }
+#   
+#   keep<-as.logical(rowSums(logicalIndexofInclusion,na.rm=TRUE))
+#   
+#   
+#   if (type=="calibration"){
+#     realTime<-data$realTime[keep]
+#     fingerprint<-data$fingerPrint[keep,]
+#     ChemData<-data$ChemData[keep,]
+#     
+#     fp<-cbind(realTime,fingerprint,as.matrix(ChemData[,chem]))
+#     goodData<-fp[complete.cases(fp[,2:dim(fp)[2]]),] #removes all the rows for which there is a NA--keeping time in there
+#     realTime<-goodData[,1]                      #pull components back out
+#     ChemData<-goodData[,dim(goodData)[2]]
+#     fingerprints<-goodData[,-1] 
+#     fingerprints<-fingerprints[,-dim(fingerprints)[2]]
+#     
+#     
+#     
+#     return(list(realTime=realTime,fingerPrints=fingerprints,ChemData=ChemData))
+#     #returnStatement
+#   }
+#   
+#   if (type=="fingerPrints"){
+#     realTime<-data$realTime[keep]
+#     fingerprint<-data$fingerPrint[keep,]
+#     return(list(realTime=realTime,fingerPrints=fingerprint))
+#     
+#   }
+#   
+#   if(type=="flow"){
+#     realTime<-data$realTime[keep]
+#     flow<-data$flow[keep]
+#     return(list(realTime=realTime,flow=flow))
+#   }
+#   
+# }
 
-subset<-function(data,type,startDates,stopDates,chem=NULL){
-  
-  logicalIndexofInclusion<-matrix(nrow=length(data$realTime),ncol=length(startDates))
-  
-  for(i in 1:length(startDates)){
-    logicalIndexofInclusion[,i]<-(data$realTime>startDates[i]&data$realTime<stopDates[i])
-  }
-  
-  keep<-as.logical(rowSums(logicalIndexofInclusion,na.rm=TRUE))
-  
-  
-  if (type=="calibration"){
-    realTime<-data$realTime[keep]
-    fingerprint<-data$fingerPrint[keep,]
-    ChemData<-data$ChemData[keep,]
-    
-    fp<-cbind(realTime,fingerprint,as.matrix(ChemData[,chem]))
-    goodData<-fp[complete.cases(fp[,2:dim(fp)[2]]),] #removes all the rows for which there is a NA--keeping time in there
-    realTime<-goodData[,1]                      #pull components back out
-    ChemData<-goodData[,dim(goodData)[2]]
-    fingerprints<-goodData[,-1] 
-    fingerprints<-fingerprints[,-dim(fingerprints)[2]]
-    
-    
-    
-    return(list(realTime=realTime,fingerPrints=fingerprints,ChemData=ChemData))
-    #returnStatement
-  }
-  
-  if (type=="fingerPrints"){
-    realTime<-data$realTime[keep]
-    fingerprint<-data$fingerPrint[keep,]
-    return(list(realTime=realTime,fingerPrints=fingerprint))
-    
-  }
-  
-  if(type=="flow"){
-    realTime<-data$realTime[keep]
-    flow<-data$flow[keep]
-    return(list(realTime=realTime,flow=flow))
-  }
-  
-}
 
 
-
-modelExecution<-function(chemical,numComp,subsampleRate,calibData,dataToModel,fitEval,fitFile,fitFileOut){
+modelExecution<-function(numComp,subsampleRate,calibData,dataToModel,fitEval,fitFile,fitFileOut){
   modelQuality<-matrix(ncol=26)
   colnames(modelQuality)<-c("M_n","M_NSE",
                             "M_VG","M_G","M_A","M_B",
@@ -635,7 +642,8 @@ modelExecution<-function(chemical,numComp,subsampleRate,calibData,dataToModel,fi
     ModelConcentration<-PLSRFitAndTestNoNSE(calibData$fingerPrints,
                                             calibData$ChemData,
                                             calibData$realTime,
-                                            numComp,fitEval,fitFile,fitFileOut,subsampleRate)                  
+                                            numComp,
+                                            fitEval,fitFile,fitFileOut,subsampleRate)                  
     #USE THE MODEL TO PREDICT OUTPUT FOR THE TARGET TIME WINDOW        
     PredictedConcentration<-predict(ModelConcentration$Fit,
                                     as.matrix(dataToModel$fingerPrints),
@@ -644,16 +652,16 @@ modelExecution<-function(chemical,numComp,subsampleRate,calibData,dataToModel,fi
     PredictedConcentration<-cbind(as.numeric(dataToModel$realTime),PredictedConcentration)
     
     #calculate stats for goodness of fit etc
+ #$$$$   
     
-    
-    modelQuality[1]<-ModelConcentration$Stats[1]
+      modelQuality[1]<-ModelConcentration$Stats[1]
     if(subsampleRate>0){
-      modelQuality[2]<-NSE(sim=ModelConcentration$OaP1[,2],obs=ModelConcentration$OaP1[,1])
+      modelQuality[2]<-ModelConcentration$Stats[3]
       modelQuality[3:6]<-OB(ModelConcentration$OaP1[,1],ModelConcentration$OaP1[,2],fitEval,fitFile,fitFileOut)
-      modelQuality[7:10]<-OB(ModelConcentration$OaP2[,1],ModelConcentration$OaP2[,2],fitEval,fitFile,fitFileOut)
+      modelQuality[7:10]<-OB(ModelConcentration$ObservedAndPredicted[,1],ModelConcentration$ObservedAndPredicted[,2],fitEval,fitFile,fitFileOut)
     }
     if(subsampleRate==0){
-      modelQuality[2]<-NSE(sim=ModelConcentration$ObservedAndPredicted[,2],obs=ModelConcentration$ObservedAndPredicted[,1])
+      modelQuality[2]<-ModelConcentrations$Stats[3]
       modelQuality[3:6]<-OB(ModelConcentration$ObservedAndPredicted[,1],ModelConcentration$ObservedAndPredicted[,2],fitEval,fitFile,fitFileOut)
     }
     modelQuality[11:25]<-ModelConcentration$Stats
