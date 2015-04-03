@@ -20,9 +20,11 @@ CalibrationFingerPrintsPath<-"C:/Users/FBlab/Desktop/work_here/Data/Brittany/Cal
 fitEval<-paste(fitPath,"fiteval",sep="")
 fitFile<-paste(fitPath,"PLSR.in",sep="")
 fitFileOut<-paste(fitPath,"PLSR_out.txt",sep="")
+filePaths=cbind(fitEval,fitFile,fitFileOut)
 
 
-ModelFilename<-c("OriginalBrittany.csv" ,"Brittany1stDerative.csv","TubidityCompensatedBrittany.csv","TurbidityCompensated1stDerivativeBrittany.csv")
+ModelFilename<-c("OriginalBrittany.csv" ,"Brittany1stDerative.csv",
+                 "TubidityCompensatedBrittany.csv","TurbidityCompensated1stDerivativeBrittany.csv") #data to be modeled
 
 #*******************************************************************************************************************/
 #*******************************************************************************************************************/
@@ -33,9 +35,9 @@ ModelFilename<-c("OriginalBrittany.csv" ,"Brittany1stDerative.csv","TubidityComp
 Chem<-c("CL", "NO2", "NNO2","NO3","NNO3","SO4","DOC","DIC","UV254", "PPO43","Ptot", "MES",
         "NNH4",  "Ntot",  "NTotFilt",  "Silica",  "Turbidity")
 #constituent names
-    chemicals<-c("DIC","DOC","MES","NO3","PPO43","PTOT","SO4","TURB","CL","NO2","NTOT","NTOTFILT","NH4")#,"SILICA")
+    chemicals<-c("DIC","DOC","MES","NO3","PPO43","PTOT","SO4","TURB","CL","NO2","NTOT","NTOTFILT","NH4","SILICA")
     #and their position in the calibration file vector
-    chemN<-c(8,7,12,5,10,11,6,17,1,2,14,15,13)#,16)#number in chemistry vector
+    chemN<-c(8,7,12,5,10,11,6,17,1,2,14,15,13,16)#number in chemistry vector
 
 
 #the type of file to use (1-original 2-1st derivative 3-turb comp 4-1st der turb comp)
@@ -58,7 +60,7 @@ j<-1 #the number of times to run through each model style
 #******************************************************************************************************************/
 
   iD<-matrix(nrow=6000,ncol=30)
-colnames(iD)<-c("chem","fileType","ncomp","subRatio",
+colnames(iD)<-c("years","fileType","ncomp","subRatio",
                           "M_n","M_NSE",
                           "M_VG","M_G","M_A","M_B",
                           "V_VG","V_G","V_A","V_B",
@@ -86,6 +88,7 @@ excludeRows<-c(29,153,155,471,482,486,514,525,530,548,615,616,617,652,658,660,66
 if(!exists("britFuncLoaded",1)){
 source("C:/Users/FBlab/Desktop/Brittany/BrittanyFunctions.R", echo=FALSE)
 }
+
 if(!exists("flow",1)){
 source("C:/Users/FBlab/Desktop/Brittany/loadData.R", echo=FALSE)
 }
@@ -98,19 +101,19 @@ source("C:/Users/FBlab/Desktop/Brittany/loadData.R", echo=FALSE)
 #*******************************Specify Parameters for a Single Run**************************************#
 #*******************************************************************************************************************/  
 #*******************************************************************************************************************/
-startDates<-c(as.POSIXct(paste("2010-10-01 00:00:00",sep=""),tz="UTC"),
-             as.POSIXct(paste("2011-10-01 00:00:00",sep=""),tz="UTC"),
-             as.POSIXct(paste("2012-10-01 00:00:00",sep=""),tz="UTC"),
-             as.POSIXct(paste("2010-10-01 00:00:00",sep=""),tz="UTC")
-             )
-             
-             
-             #jan 1 2010
-stopDates<-c(as.POSIXct(paste("2011-07-30 00:00:00",sep=""),tz="UTC"),
-            as.POSIXct(paste("2012-07-30 00:00:00",sep=""),tz="UTC"),
-            as.POSIXct(paste("2013-07-30 00:00:00",sep=""),tz="UTC"),
-            as.POSIXct(paste("2014-07-30 00:00:00",sep=""),tz="UTC")
-            )
+# startDates<-c(as.POSIXct(paste("2010-10-01 00:00:00",sep=""),tz="UTC"),
+#              as.POSIXct(paste("2011-10-01 00:00:00",sep=""),tz="UTC"),
+#              as.POSIXct(paste("2012-10-01 00:00:00",sep=""),tz="UTC"),
+#              as.POSIXct(paste("2010-10-01 00:00:00",sep=""),tz="UTC")
+#              )
+#              
+#              
+#              #jan 1 2010
+# stopDates<-c(as.POSIXct(paste("2011-07-30 00:00:00",sep=""),tz="UTC"),
+#             as.POSIXct(paste("2012-07-30 00:00:00",sep=""),tz="UTC"),
+#             as.POSIXct(paste("2013-07-30 00:00:00",sep=""),tz="UTC"),
+#             as.POSIXct(paste("2014-07-30 00:00:00",sep=""),tz="UTC")
+#             )
             
             
             #june 15 2011  
@@ -121,9 +124,8 @@ stopDates<-c(as.POSIXct(paste("2011-07-30 00:00:00",sep=""),tz="UTC"),
 #eventStart<-as.POSIXct("2010-12-01 07:13:38",tz="UTC")
 #eventStop<-as.POSIXct("2010-12-15 04:33:31",tz="UTC")
 
-
-
 #chemical<-2   #chemical chemicals<-c("DIC","DOC","MES","NO3","PPO43","PTOT","SO4","TURB","CL",                                    #"NO2","NTOT","NTOTFILT","NH4")#,"SILICA")
+
 
 Types<-c("original","prunedO",
          "1stDer","pruned1D",
@@ -133,7 +135,7 @@ Types<-c("original","prunedO",
 #the chemical number to 1:9
 #and the dates
 
-for(y in 3:3){#for each year
+for(y in 1:3){#for each year
   if (y==1){
         startDates<-c(as.POSIXct(paste("2010-11-18 00:00:00",sep=""),tz="UTC"),
                       as.POSIXct(paste("2011-04-25 00:00:00",sep=""),tz="UTC")
@@ -184,8 +186,9 @@ for(y in 3:3){#for each year
           startDate<-min(startDates)
           stopDate<-max(stopDates)
           
-          flow<-subset(Flow,"flow",startDates,stopDates)
-        for(chemical in 1:9){
+      flow<-subsetAll(flow=Flow,dateWindows=cbind(startDates,stopDates))$flow
+      
+  for(chemical in 10:14){
                   for(numComp in 3:9){
                   #numComp<-4    #specify number of components to use in the model
                       for(k in 1:length(Types)){
@@ -196,12 +199,18 @@ for(y in 3:3){#for each year
                           iD[counter,2]<-fileType
                           iD[counter,3]<-numComp
                           iD[counter,4]<-subsetRate
-                          iD[counter,30]<-chemical
-                        #change here to send vector of startDates and stopDate
-                        calibration<-subsetSpecData(fileType,"calibration",startDates,stopDates,chemN[chemical])
-                        specDataToModel<-subsetSpecData(fileType,"fingerPrints",startDates,stopDates)
-                                    
-                     
+                          iD[counter,30]<-Chem[chemN[chemical]]
+                          
+                  #change here to send vector of startDates and stopDate
+                        calibration<-selectSpecData(fileType,"calibration")
+                        specDataToModel<-selectSpecData(fileType,"fingerPrints")
+                        
+                        all<-subsetAll(calibData=calibration,modelData=specDataToModel,
+                                       chem=chemN[chemical],
+                                       dateWindows=cbind(startDates,stopDates),
+                                       keepSpecData=1)
+                        
+                        #subsetAll(calibData=0,modelData=0,flow=0,chem,dateWindows,keepSpecData=0)
                                          
                             for(i in 1:1){
                                   #returns a list
@@ -215,7 +224,7 @@ for(y in 3:3){#for each year
                                              "_",
                                              numComp,
                                              "_",
-                                             (as.POSIXlt(startDate))$year+1900,
+                                             paste((as.POSIXlt(startDate))$year+1900,"-",(as.POSIXlt(stopDate))$year+1900,sep=""),
                                              "PLSR.in",sep=""
                                              )
                               fitFileOut<-paste(fitPath, 
@@ -225,11 +234,14 @@ for(y in 3:3){#for each year
                                                 "_",
                                                 numComp,
                                                 "_",
-                                                (as.POSIXlt(startDate))$year+1900,
+                                                paste((as.POSIXlt(startDate))$year+1900,"-",(as.POSIXlt(stopDate))$year+1900,sep=""),
                                                 "PLSR_out.txt",sep=""
                                                 )
-                                  modelOutput<-modelExecution(chemical,numComp,subsetRate,calibration,specDataToModel,fitEval,fitFile,fitFileOut)
-                                  
+                                  modelOutput<-modelExecution(numComp=numComp,subsample=24,
+                                                              calibData=all$calibData,
+                                                              dataToModel=all$specData,
+                                                              fitEval,fitFile,fitFileOut)
+                                  #modelExecution(numComp,subsampleRate,calibData,dataToModel,fitEval,fitFile,fitFileOut)
                                           #          totmin<-max((modelOutput$PredictedConcentration[,1])-min(modelOutput$PredictedConcentration[,1]))/60
                                            #         PredictedAnnualConcentrationTS<-as.data.frame(approx(modelOutput$PredictedConcentration[,1],
                                            #                              modelOutput$PredictedConcentration[,2],n=totmin+1)) #create a time series of [ ] at 1 minute intervals for the whole dataset
@@ -273,11 +285,11 @@ for(y in 3:3){#for each year
                                                           )
                                                     points(modelOutput$ObservedandPredicted[,3],
                                                            modelOutput$ObservedandPredicted[,1],
-                                                           col="green",cex=0.8,pch=18)
+                                                           col="green",cex=0.9,pch=18)
                                                     
                                                     points(modelOutput$ObservedandPredicted[,3],
                                                            modelOutput$ObservedandPredicted[,2],
-                                                           col="blue",cex=.8,pch=20)
+                                                           col="blue",cex=.9,pch=20)
                                                     abline(h=0)
                                   
                                             mtext(paste(fileType,numComp,startDate,sep="   "))

@@ -19,7 +19,8 @@ message("load flow data")
 
       #calculate a time object from the date and time
       flow$realTime<-strptime(paste(flow$V1,flow$V2,sep=" "),'%d/%m/%Y %H:%M:%S',tz="UTC")               #put back in the fixed values
-
+      a<-align.time(flow$realTime,60)
+      flow$realTime<-a
       #rename columns and remove the unnecessary ones
       colnames(flow)[3]<-"flow"
       flow<-flow[,-1:-2]
@@ -27,7 +28,7 @@ message("load flow data")
       #remove any missing data
       Flow<-flow[complete.cases(flow$flow),]
       Flow<-flow[complete.cases(flow$realTime),]# removes all the rows for which there is a NA--keeping time in there
-
+      
       #plot(flow$realTime,flow$flow,type="l")
 
 #*******************************************************************************************************************/

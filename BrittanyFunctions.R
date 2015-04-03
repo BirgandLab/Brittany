@@ -5,6 +5,7 @@
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 #
 britFuncLoaded<-1
+
 densityDependentSubset<-function(ChemConc,realTime,fingerPrint,subsetRatio,Replace){
               #ChemConc a vector of chemical concentrations for each fingerprint
               #fingerPrint uv/Vis values
@@ -71,32 +72,23 @@ loadDataFile<-function(filepath,filename,excluderows=0,timezone="UTC"){
               data<-read.table(file=paste(filepath,filename,sep=""),sep=",",header=TRUE,skip=0)
               
               realTime<-strptime(data[,1],'%d/%m/%Y %H:%M:%S',tz=timezone)
-              #if there is no time in the file for an observation, we will disregard it
-              #hasTime<-complete.cases(realTime)
-              #realTime<-realTime[hasTime]
-              #data<-data[hasTime,]
-              
-              #parse the date
-              #Date<-substr(data$DateScan, 1, 10)        #the date
-              #T<-substr(data$DateScan, 12, 19)       #the time
-              #T[T==""]="00:00:00"                    #ah, but where it should be midnight, often it was " "
-              #D<-paste(Date,T,sep=" ")               #put back in the fixed values
-              #D<-strptime(D, '%d/%m/%Y %H:%M:%S',tz="UTC")    #convert it to a _flawless_ time opject
+
               data$DateScan<-realTime                       #store it back in the matrix
-              #I am using status to idenfity calibration data that may be bad to used
-              #when status==NOT, drop data
+            #exclude the rows specified in the environment setup--all observations from each of those rows is removed
+            #it might be smarter to do it by realtime
               if(excluderows>0){
                 keepThese<-!realTime%in%realTime[excluderows]
                 }
               else{
                 keepThese=seq(1:dim(data)[1])
               }
-                #keepThese<-data[,2]!="NOT"
+               
               realTime<-(data$DateScan[keepThese])                                       #pull out time
               ChemData<-data[keepThese,(dim(data)[2]-16):(dim(data)[2])]            #pull out the analyte data
               fingerPrints<-data[keepThese,-(dim(data)[2]-20):-(dim(data)[2])]    #remove chemical data and the 4 columns of NaNs in 742.5-750 nM bins
               fingerPrints<-fingerPrints[,-1:-2]                      #remove status and datetime
-              
+               realTime<-align.time(realTime,60) #rounds UP to begining of next interval (specified in seconds)
+            
               return(list(realTime=realTime, ChemData=ChemData, fingerPrints=fingerPrints))
             }
 
@@ -215,9 +207,10 @@ PLSRFitAndTest<-function(fingerPrint,ChemConc,realTime,numParameters,fitEval,fit
                 Stats[3]<-rmse(obs=as.matrix(calibrationChemConc),sim=as.matrix(calibPredict1))
                 Stats[4]<-nrmse(obs=as.matrix(calibrationChemConc),sim=as.matrix(calibPredict1))
                 Stats[5]<-fitStats$coefficients[2,1] #slope
+         
             #predict concentrations for all available lab data
             calibPredict2<-predict(calibrationFit,data.matrix(fingerPrint),ncomp=numParameters,type=c("response"))
-                fitQualityModelFull<-OB(ChemConc,calibPredict2,fitEval,fitFile,fitFileOut)
+                fitQualityModelFull<-OB(ChemConcFull,calibPredict2,fitEval,fitFile,fitFileOut)
                 op2<-cbind(ChemConc,calibPredict2,RealTime)
             
             fitStats<-summary(lm(ChemConc~calibPredict2))
@@ -228,6 +221,10 @@ PLSRFitAndTest<-function(fingerPrint,ChemConc,realTime,numParameters,fitEval,fit
             Stats[9]<-nrmse(obs=as.matrix(ChemConc),sim=as.matrix(calibPredict2))
             Stats[10]<-fitStats$coefficients[2,1] #slope
      }#end if subsample>0
+  
+  
+  
+  
   RealTime<-as.matrix(fingerPrint[,1])                        #complete cases realtime
   fingerPrint<-fingerPrint[,-dim(fingerPrint)[2]]  #complete cases fingerprints (remove chemConc)
   fingerPrint<-fingerPrint[,-1]                    #complete cases fingerprints (remove RealTime)
@@ -300,7 +297,7 @@ OB<-function(observed,predicted,fitEval,fitFile,fitFileOut){
                 
                 #in line a[7] there are data for very good fits, after tha : and before the %
                 fitQuality<-c(0,0,0,0)
-                names(fitQuality)<-c("veryGoood","good","acceptable","bad")
+                names(fitQuality)<-c("veryGood","good","acceptable","bad")
                 
                 for (i in 7:10){
                   b<-toString(a[i])
@@ -327,31 +324,35 @@ PLSRFitAndTestNoNSE<-function(fingerPrint,ChemConc,realTime,numParameters,fitEva
   fingerPrint<-cbind(realTime,fingerPrint,as.matrix(ChemConc))                          #bind the two matrices together to determine complete cases
   fingerPrint<-fingerPrint[complete.cases(fingerPrint[,2:dim(fingerPrint)[2]]),]        #removes all the rows for which there is a NA--keeping time in there
     
-  #pull apart again
+  #pull apart again, and keep a copy for validating a subset model
   ChemConc<-as.matrix(fingerPrint[,dim(fingerPrint)[2]])                       #strip off the chemConc again
+ # ChemConcFull<-ChemConc
+ # RealTimeFull<-as.matrix(fingerPrint[,1])
+ # fingerPrintFull<-fingerPrint[,-dim(fingerPrint)[2]]             #complete cases fingerprints (remove chemConc)
+ # fingerPrintFull<-FingerPrintFull[,-1]
   
-  if(subsample==0){
-    Stats<-matrix(nrow=1,ncol=5)
-    colnames(Stats)<-c("n","r2","rmse","nrmse","slope")
+  if(subsample==0){  #if we are not going to take a subset of the data, follow this protocol
+    Stats<-matrix(nrow=1,ncol=9)
+    colnames(Stats)<-c("n","r2","rmse","nrmse","slope","vg","g","a","b")
     RealTime<-as.matrix(fingerPrint[,1])                        #complete cases realtime
-    fingerPrint<-fingerPrint[,-dim(fingerPrint)[2]]  #complete cases fingerprints (remove chemConc)
-    fingerPrint<-fingerPrint[,-1]                    #complete cases fingerprints (remove RealTime)
+    fingerPrint<-fingerPrint[,-dim(fingerPrint)[2]]             #complete cases fingerprints (remove chemConc)
+    fingerPrint<-fingerPrint[,-1]                               #complete cases fingerprints (remove RealTime)
     
   }
   
   if(subsample > 0){#enter density dependent subsampling with Subsample Value guiding the process
                   Stats<-matrix(nrow=1,ncol=15)
                   colnames(Stats)<-c("n","r2","rmse","nrmse","slope","n","r2","rmse","nrmse","slope","n","r2","rmse","nrmse","slope")
-                  Histogram<-hist(ChemConc,breaks="FD",plot=TRUE)
-                  
-                  sampleRatio<-subsample
+                  Histogram<-hist(ChemConc,breaks="FD",plot=FALSE)
+                  sampleRatio<-(subsample/length(ChemConc))
+                  #sampleRatio<-subsample
                   count<-0
                   # fingerPrint1<-fingerPrint[order(fingerPrint[,dim(fingerPrint)[2]]),] #SORTED IN ASCENDING ORDER
                   for (q in seq(1,(length(Histogram$breaks)-1),1)){
                     #for each histogram bin, make a list of fingerPrints
                     inTheBin<-fingerPrint[(ChemConc>=Histogram$breaks[q])&(ChemConc<=Histogram$breaks[q+1]),]
                     #print(inTheBin)
-                    #estimate the number of samples from that bin (rounding up here)
+                    #estimate the number of samples we need from that bin (rounding up here)
                     sampleNum<-sum(ceiling(Histogram$counts[q]*sampleRatio))
                     #print(sampleNum)
                     #collect that number of samples from the bin
@@ -367,51 +368,65 @@ PLSRFitAndTestNoNSE<-function(fingerPrint,ChemConc,realTime,numParameters,fitEva
                   #  readline()
                   }
                   remove(someNumber)
-                  
-                  
+          #restructure the calibration dataset to use in PLSR     
+             #pull of the the chem concentration
                   calibrationChemConc<-(calibration[,dim(calibration)[2]])
-                  #print(calibrationChemConc)
+             #and the realTime    
                   calibrationRealTime<-as.matrix(calibration[,1]) 
-                  #print(calibrationRealTime)
+             #and drop their columns      
                   calibrationFingerPrint<-calibration[,-1]
                   calibrationFingerPrint<-calibrationFingerPrint[,-dim(calibrationFingerPrint)[2]]
                   
                   
+          #restructure the full dataset to be used in PLSR and validation stages
+              #pull of the the realTime and ChemConce data
+                  ChemConc<-as.matrix(fingerPrint[,dim(fingerPrint)[2]])
+                  RealTime<-as.matrix(fingerPrint[,1])  
+              #and drop their columns     
+                  fingerPrint<-fingerPrint[,-dim(fingerPrint)[2]]  
+                  fingerPrint<-fingerPrint[,-1]                    
                   
-                  RealTime<-as.matrix(fingerPrint[,1])                        #complete cases realtime
-                  fingerPrint<-fingerPrint[,-dim(fingerPrint)[2]]  #complete cases fingerprints (remove chemConc)
-                  fingerPrint<-fingerPrint[,-1]                    #complete cases fingerprints (remove RealTime)
-                  
-                  #RUN PLSR MODEL FOR calibration SUBSAMPLE
+#RUN PLSR MODEL FOR calibration SUBSAMPLE
                   calibrationFit<-plsr(calibrationChemConc~data.matrix(calibrationFingerPrint),
                                        ncomp=numParameters,validation="CV")
-                  
-              #predict concentrations for the calibration (uninteresting)
+          
+          #predict concentrations for the calibration (uninteresting)
                   calibPredict1<-predict(calibrationFit,data.matrix(calibrationFingerPrint),
                                          ncomp=numParameters,type=c("response"))
-                      fitQualityModel<-OB(calibrationChemConc,calibPredict1,fitEval,fitFile,fitFileOut)
+          #calculate the fit quality calling on FitEval
+              #    fitQualityModel<-OB(calibrationChemConc,calibPredict1,fitEval,fitFile,fitFileOut)
+                        
+          #combine the observed and predicted values
                       op1<-cbind(calibrationChemConc,calibPredict1,calibrationRealTime)
                       colnames(op1)<-c("observed","predicted","realTime")
-                 #    print(op1[1:10,])
+          #calculate some other fit statistics 
                       fitStats<-summary(lm(calibrationChemConc~calibPredict1))
                       confInt<-predict(lm(calibrationChemConc~calibPredict1),interval='prediction',level=0.95)
-                  
+          #prepare output       
                   Stats[1]<-fitStats$df[2]
                   Stats[2]<-fitStats$r.squared
                   Stats[3]<-rmse(obs=as.matrix(calibrationChemConc),sim=as.matrix(calibPredict1))
                   Stats[4]<-nrmse(obs=as.matrix(calibrationChemConc),sim=as.matrix(calibPredict1))
                   Stats[5]<-fitStats$coefficients[2,1] #slope
                   
-      #predict concentrations for all available lab data
+    #predict concentrations using the model PLSR Fit with the full dataset of fingerprints
+                        #this is what I call validating the model
                   calibPredict2<-predict(calibrationFit,data.matrix(fingerPrint),ncomp=numParameters,type=c("response"))
-                      fitQualityModelFull<-OB(ChemConc,calibPredict2,fitEval,fitFile,fitFileOut)
+
+          #calculate the fit quality calling on FitEval
+             #     fitQualityModelFull<-OB(ChemConc,calibPredict2,fitEval,fitFile,fitFileOut)
+          #combine the observed and predicted values
                       op2<-cbind(ChemConc,calibPredict2,RealTime)
+          #find the values that were used in the ccalibration model by date (column 3)
+          #this lets us keep track later on of which subset of values were used in making the model
                       indx<-op2[,3]%in%op1[,3]
+          #add the index variable to the observed and predicted dataset
                       op2<-cbind(op2,indx)
                       colnames(op2)<-c("observed","predicted","realTime","calib")
-                  #print(op2[1:10,])
+          #calculate some summary statistics    using all the available ChemConc and all predicted values  
                       fitStats<-summary(lm(ChemConc~calibPredict2))
                       confInt<-predict(lm(ChemConc~calibPredict2),interval='prediction',level=0.95)
+          #prepare output
                   Stats[6]<-fitStats$df[2]
                   Stats[7]<-fitStats$r.squared
                   Stats[8]<-rmse(obs=as.matrix(ChemConc),sim=as.matrix(calibPredict2))
@@ -421,13 +436,14 @@ PLSRFitAndTestNoNSE<-function(fingerPrint,ChemConc,realTime,numParameters,fitEva
   
   #run PLSR Model for all available data
   Fit<-plsr(ChemConc~data.matrix(fingerPrint),ncomp=numParameters,validation="CV")  #PLSR model to predict chemConc with cross validation
+  #predicte chem concentrations
   Predict<-predict(Fit,data.matrix(fingerPrint),ncomp=numParameters,type=c("response"))
- 
   #fitQualityFull<-OB(ChemConc,Predict,fitEval,fitFile,fitFileOut)
+  #collect data for output
   op3<-cbind(ChemConc,Predict,RealTime)
+
   colnames(op3)<-c("observed","predicted","realTime")
- # print(op3[1:10,])
-    
+ 
   
   if(subsample>0){
     fitStats<-summary(lm(ChemConc~Predict))
@@ -438,6 +454,7 @@ PLSRFitAndTestNoNSE<-function(fingerPrint,ChemConc,realTime,numParameters,fitEva
     Stats[14]<-nrmse(obs=ChemConc,sim=as.matrix(Predict))
     Stats[15]<-fitStats$coefficients[2,1] #slope
   }
+  
   if(subsample==0){
     fitStats<-summary(lm(ChemConc~Predict))
     confInt<-predict(lm(ChemConc~Predict),interval='prediction',level=0.95)
@@ -529,7 +546,7 @@ loadFingerPrints<-function(FingerPrintPath,filename,type){
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 
-subsetSpecData<-function(fileType,dataType,startDates,stopDates,chem){
+selectSpecData<-function(fileType,dataType){
       if(fileType=="prunedO"){
         data<-original
         myData<-prunedO
@@ -571,11 +588,11 @@ subsetSpecData<-function(fileType,dataType,startDates,stopDates,chem){
       
      
   if(dataType=="fingerPrints"){
-    output<-subset(data,dataType,startDates,stopDates)
+    output<-data #subset(data,dataType,startDates,stopDates)
   }
   
   if(dataType=="calibration"){
-    output<-subset(myData,dataType,startDates,stopDates,chem)
+    output<-myData #subset(myData,dataType,startDates,stopDates,chem)
   }
 return(output)  
 }
@@ -635,7 +652,7 @@ modelExecution<-function(numComp,subsampleRate,calibData,dataToModel,fitEval,fit
                             "C_n","C_r2","C_RMSE","C_NRMSE","C_slope",
                             "V_n","V_r2","V_RMSE","V_NRMSE","V_slope",
                             "F_n","F_r2","F_RMSE","F_NRMSE","F_slope",
-                            "subR")
+                            "nsubset")
   
   #for any model--first subset the data, and pass subsetted data to the execution function
   if(length(calibData$ChemData)>15){
@@ -661,7 +678,7 @@ modelExecution<-function(numComp,subsampleRate,calibData,dataToModel,fitEval,fit
       modelQuality[7:10]<-OB(ModelConcentration$ObservedAndPredicted[,1],ModelConcentration$ObservedAndPredicted[,2],fitEval,fitFile,fitFileOut)
     }
     if(subsampleRate==0){
-      modelQuality[2]<-ModelConcentrations$Stats[3]
+      modelQuality[2]<-ModelConcentration$Stats[3]
       modelQuality[3:6]<-OB(ModelConcentration$ObservedAndPredicted[,1],ModelConcentration$ObservedAndPredicted[,2],fitEval,fitFile,fitFileOut)
     }
     modelQuality[11:25]<-ModelConcentration$Stats
@@ -678,3 +695,137 @@ modelExecution<-function(numComp,subsampleRate,calibData,dataToModel,fitEval,fit
 
 
 #foobar<-modelExecution(chemical,numComp,subsetRate,calibration,specDataToModel,fitEval,fitFile,fitFileOut)
+
+
+
+
+
+#in this one chem is a character string that has to match the name in the data column
+
+subsetAll<-function(calibData=0,modelData=0,flow=0,chem,dateWindows,keepSpecData=0,rangeOrwindows="windows"){
+  #for each type of data (calibData, spec data to model, and flow data), check to see if it is present,
+  # if it is, subset it to the date windows specified
+  #bad data rows have already been excluded
+  calib<-0
+  model<-0
+  floutput<-0
+  
+  #if rangeOrWindows is defined as "range" only the outer limits will be used for calibrationData
+  #obviously, this should force the program to "keepSpecData=1" as well.
+  
+  #if keepSpecData is set to 1, spec data will only be hacked down to the min and max of the date range
+  #windows of data omitted from the calib data will be kept in the spec data
+  
+  if(rangeOrwindows=="range"){
+    keepSpecData=1;
+  }
+  
+  
+  #if there are calibdata coming in, subset them
+  if(length(as.data.frame(calibData))>1){  
+                        if(rangeOrwindows=="windows"){
+                          keep<-(calibData$realTime>min(dateWindows)&calibData$realTime<max(dateWindows))
+                    
+                        }
+                  else{
+                        logicalIndexofInclusion<-matrix(nrow=length(calibData$realTime),ncol=dim(dateWindows)[1])
+                        for(i in 1:dim(dateWindows)[1]){
+                          logicalIndexofInclusion[,i]<-(calibData$realTime>dateWindows[i,1]&calibData$realTime<dateWindows[i,2])
+                        }
+                        
+                        keep<-as.logical(rowSums(logicalIndexofInclusion,na.rm=TRUE))
+                        }
+                  
+                      calibData<-cbind(calibData$realTime[keep],calibData$fingerPrint[keep,],subset(calibData$ChemData[keep,],select=chem))
+                      colnames(calibData)[1]<-"realTime"    
+                      
+                      calibData<-calibData[complete.cases(calibData[,2:dim(calibData)[2]]),] #removes all the rows for which there is a NA--keeping time in there
+                      crealTime<-calibData[,1]                      #pull components back out
+                      cChemData<-calibData[,dim(calibData)[2]]
+                      cfingerprints<-calibData[,-1] 
+                      cfingerprints<-cfingerprints[,-dim(cfingerprints)[2]]
+                      crealTime<-align.time(crealTime,60)
+                      calibData$realTime<-crealTime
+                      calib<-list(realTime=crealTime,fingerPrints=cfingerprints,ChemData=cChemData)
+                }
+  
+    if(length(as.data.frame(modelData))>1){
+                  if(keepSpecData==0){
+                        logicalIndexofInclusion<-matrix(nrow=length(modelData$realTime),ncol=dim(dateWindows)[1])
+                            
+                          for(i in 1:dim(dateWindows)[1]){
+                              logicalIndexofInclusion[,i]<-(modelData$realTime>dateWindows[i,1]&modelData$realTime<dateWindows[i,2])
+                            }
+                        
+                        keep<-as.logical(rowSums(logicalIndexofInclusion,na.rm=TRUE))
+              
+                        }
+                
+                  else{  
+                        keep<-(modelData$realTime>min(dateWindows) & modelData$realTime<max(dateWindows))
+                        }
+                
+                        modelData<-cbind(modelData$realTime[keep],modelData$fingerPrint[keep,])
+                        colnames(modelData)[1]<-"realTime"    
+                        
+                        modelData<-modelData[complete.cases(modelData[,2:dim(modelData)[2]]),] #removes all the rows for which there is a NA--keeping time in there
+                        mrealTime<-modelData[,1]                      #pull components back out
+                        mfingerprints<-modelData[,-1] 
+                        mrealTime<-align.time(mrealTime,60)
+                        model<-list(realTime=mrealTime,fingerPrints=mfingerprints)  
+                }
+          
+  #check to see if there are flow data. if so, subset them
+  if(length(as.data.frame(flow))>1){  
+                  keep<-(flow$realTime>dateWindows[1,1] & flow$realTime<dateWindows[dim(dateWindows)[1],2])
+                  flowTime<-flow$realTime[keep]
+                  flowFlow<-flow$flow[keep]
+                  floutput<-list(realTime=flowTime,flow=flowFlow)
+                }
+  return(list(calibData=calib,specData=model,flow=floutput))
+  
+
+
+}
+
+
+runModel<-function(chem,numComp,dates,calibData,modelData,type,flow,subsetRatio=0,iterations=10,keepSpecData=1,fitEval,fitFile,fitFileOut){
+  #subset data to the windows specified above
+  lotOfData<-subsetAll(calibData=calibData,modelData=modelData,flow=flow,chem=chem,dateWindows=dates,keepSpecData=keepSpecData)
+  #run model
+  for (r in 1:iterations){
+    
+    putout<-modelExecution(numComp=numComp,subsample=100,
+                           calibData=lotOfData$calibData,
+                           dataToModel=lotOfData$specData,
+                           fitEval,fitFile,fitFileOut)
+    
+
+    
+    
+    if(r==1){
+      modelQuality<-as.data.frame(matrix(nrow=iterations,ncol=dim(putout$modelQuality)[2]+5))
+      modelQuality[1,]<-c(putout$modelQuality,chem,numComp,r,subsetRatio,type)
+      colnames(modelQuality)<-c(colnames(putout$modelQuality),"chem","numComp","iter","subset","type")
+      
+      predictions<-as.data.frame(matrix(nrow=dim(putout$PredictedConcentrations)[1],ncol=iterations+1))
+      predictions[,1:2]<-putout$PredictedConcentrations
+      
+      Observed<-as.data.frame(lotOfData$calibData$realTime)
+      colnames(Observed)<-"realTime"
+      
+      Observed<-merge(Observed,putout$ObservedandPredicted,by.x="realTime",by.y="realTime",all.x=TRUE)
+      
+    }else{
+      modelQuality[r,]<-c(putout$modelQuality,chem,numComp,r,subsetRatio,type)
+      predictions[,r+1]<-putout$PredictedConcentrations
+      Observed<-merge(Observed,putout$ObservedandPredicted,by.x="realTime",by.y="realTime",all.x=TRUE)
+    }
+  }
+  return(list(modelQuality=modelQuality,predictions=predictions,calibPoints=Observed))  
+}
+
+
+
+
+

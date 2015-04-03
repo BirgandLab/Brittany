@@ -318,65 +318,6 @@ plot(foo$realTime,foo$ChemData)
 
 
 
-#in this one chem is a character string that has to match the name in the data column
-subsetAll<-function(calibData=0,modelData=0,flow=0,chem,dateWindows){
-    #for each type of data (calibData, spec data to model, and flow data), check to see if it is present,
-    # if it is, subset it to the date windows specified
-    #bad data rows have already been excluded
-      calib<-0
-      model<-0
-      floutput<-0
-  
-  
-if(length(as.data.frame(calibData))>1){  
-      logicalIndexofInclusion<-matrix(nrow=length(calibData$realTime),ncol=dim(dateWindows)[1])
-    for(i in 1:dim(dateWindows)[1]){
-          logicalIndexofInclusion[,i]<-(calibData$realTime>dateWindows[i,1]&calibData$realTime<dateWindows[i,2])
-        }
-        
-        keep<-as.logical(rowSums(logicalIndexofInclusion,na.rm=TRUE))
-      
-          calibData<-cbind(calibData$realTime[keep],calibData$fingerPrint[keep,],subset(calibData$ChemData[keep,],select=chem))
-          colnames(calibData)[1]<-"realTime"    
-      
-          calibData<-calibData[complete.cases(calibData[,2:dim(calibData)[2]]),] #removes all the rows for which there is a NA--keeping time in there
-          crealTime<-calibData[,1]                      #pull components back out
-          cChemData<-calibData[,dim(calibData)[2]]
-          cfingerprints<-calibData[,-1] 
-          cfingerprints<-cfingerprints[,-dim(cfingerprints)[2]]
-          crealTime<-align.time(crealTime,60)
-          calibData$realTime<-crealTime
-      calib<-list(realTime=crealTime,fingerPrints=cfingerprints,ChemData=cChemData)
-      }
- 
-  if(length(as.data.frame(modelData))>1){  
-          logicalIndexofInclusion<-matrix(nrow=length(modelData$realTime),ncol=dim(dateWindows)[1])
-          for(i in 1:dim(dateWindows)[1]){
-            logicalIndexofInclusion[,i]<-(modelData$realTime>dateWindows[i,1]&modelData$realTime<dateWindows[i,2])
-          }
-          
-          keep<-as.logical(rowSums(logicalIndexofInclusion,na.rm=TRUE))
-          
-          modelData<-cbind(modelData$realTime[keep],modelData$fingerPrint[keep,])
-          colnames(modelData)[1]<-"realTime"    
-          
-          modelData<-modelData[complete.cases(modelData[,2:dim(modelData)[2]]),] #removes all the rows for which there is a NA--keeping time in there
-          mrealTime<-modelData[,1]                      #pull components back out
-          mfingerprints<-modelData[,-1] 
-          mrealTime<-align.time(mrealTime,60)
-    model<-list(realTime=mrealTime,fingerPrints=mfingerprints)      
-  }
-
-
-  if(length(as.data.frame(flow))>1){  
-        keep<-flow$realTime>dateWindows[1,1]&flow$realTime<dateWindows[dim(dateWindows)[1],2]
-        flowTime<-flow$realTime[keep]
-        flowFlow<-flow$flow[keep]
-        floutput<-list(realTime=flowTime,flow=flowFlow)
-      }
-return(list(calibData=calib,specData=model,flow=floutput))
-
-}
 
 
 
@@ -404,7 +345,7 @@ return(list(calibData=calib,specData=model,flow=floutput))
 a<-runModel(chem="DIC",
          numComp=5,
          dates=cbind(startDates,stopDates),
-         calibData=prunedTC,
+         calibData=,
          modelData=TurbidityCompensated,
          type="turbComp",
          flow=Flow,
@@ -418,124 +359,191 @@ a<-runModel(chem="DIC",
 
 
 
-runModel<-function(chem,numComp,dates,calibData,modelData,type,flow,subsetRatio=0,iterations=1,fitEval,fitFile,fitFileOut){
-  #subset data to the windows specified above
-  lotOfData<-subsetAll(calibData,modelData,flow,chem,cbind(startDates,stopDates))
-  #run model
-  for (r in 1:iterations){
-          
-        putout<-modelExecution(numComp,subsetRatio,lotOfData$calibData,lotOfData$specData,fitEval,fitFile,fitFileOut)
-          
-          if(r==1){
-            modelQuality<-as.data.frame(matrix(nrow=iterations,ncol=dim(putout$modelQuality)[2]+5))
-            modelQuality[1,]<-c(putout$modelQuality,chem,numComp,r,subsetRatio,type)
-                  colnames(modelQuality)<-c(colnames(putout$modelQuality),"chem","numComp","iter","subset","type")
-            
-            predictions<-as.data.frame(matrix(nrow=dim(putout$PredictedConcentrations)[1],ncol=iterations+1))
-            predictions[,1:2]<-putout$PredictedConcentrations
-            
-            Observed<-as.data.frame(lotOfData$calibData$realTime)
-            colnames(Observed)<-"realTime"
-          
-            Observed<-merge(Observed,putout$ObservedandPredicted,by.x="realTime",by.y="realTime",all.x=TRUE)
-          
-          }else{
-            modelQuality[r,]<-c(putout$modelQuality,chem,numComp,r,subsetRatio,type)
-            predictions[,r+1]<-putout$PredictedConcentrations
-            Observed<-merge(Observed,putout$ObservedandPredicted,by.x="realTime",by.y="realTime",all.x=TRUE)
-          }
-  }
-return(list(modelQuality=modelQuality,predictions=predictions,calibPoints=Observed))  
-}
 
 
 
+runIterativeModel(numComp=5,iterations=1,subsetRatio=0,
+ chemToRun=c("DIC"),
+ calibData,
+ specData,
+ fitFilePaths,
+ timeWindow)
 
 
 
 #run a set of models with specified parameters
-runIterativeModel(numComp=5,iterations=1,subsetRatio=0,
-                  chemsToRun=c("DIC","DOC","MES","NNO3","PPO43","PTOT","SO4","Turb","CL"),
-                  fitFilePaths,timeWindow){
-  for(i in 1:length(chemsToRun)){
-    
-    if("DIC"%in%chemsToRun){
-      a<-runModel(chem="DIC",
+runIterativeModel<-function(numComp=5,iterations=1,subsetRatio=0,
+                  chemToRun=NULL,calibData=NULL,specData=NULL,
+                  fitFilePaths=NULL,timeWindow=NULL)
+{
+  #ssDATA<-subsetAll(calibData,specData,chem=chemToRun,flow=Flow, dateWindows=timeWindow)
+  a<-runModel(chem=chemToRun,
                   numComp=numComp,
                   dates=timeWindow,
-                  calibData=prunedTC,
-                  modelData=TurbidityCompensated,
-                  type="turbComp",
-                  flow=Flow,
+                  calibData=calibData,
+                  modelData=specData,
+                  type=" ",
+                  flow=flow,
                   subset=subsetRatio,
                   iterations=iterations,
-                  fitEval=fitEval,fitFile=fitFile,fitFileOut=fitFileOut)
+                  fitEval=filePaths[1],fitFile=filePaths[2],fitFileOut=filePaths[3])
       
       #splat out files that might be reloaded for analytical purposes laytah
       #this is a list with several types of data
-      fN[i]<-paste("DIC","_turbComp_",subsetRatio,"_",iterations,"_",as.POSIXlt(min(timeWindow),origin="1970-1-1")$year+1900,"-",as.POSIXlt(max(timeWindow),origin="1970-1-1")$year+1900,sep="")
+      fN[i]<-paste(chem,subsetRatio,"_",iterations,"_",as.POSIXlt(min(timeWindow),origin="1970-1-1")$year+1900,"-",as.POSIXlt(max(timeWindow),origin="1970-1-1")$year+1900,sep="")
       save(a,file=fN[i]);
+
       # close(fN[i])
-      
-      
-    }
-    
-    
-    
-    
-    
-    
-    
-    
-    
-  }
-   
 }
 
+###SHEER BRILLIANCE: combine all types of fingerprints and see if PLSR makes better fits this way!!!!
+#monster Calib Data
 
 
 
-library(tseries)
-
-a<-as.ts(Flow)
-
-#1 doesn't tolerate nans
-#2 only wants a univariate vector
-# AND needs to perform a function
-
-#my plan: give it a vector the length of the time series we are working on
-#write a function that just returns the vector of numbers, which we use as index values bang!@
-cheat<-function(x){
-  return(x)
-}
-
-b<-tsbootstrap(1:700,type="stationary",nb=2,cheat)
-
-
-
-library(tseries)
-myFUn<-function (x) 
-{
-  type = "stationary"
-  b <- 3.15 * NROW(y)^(1/3)
-  y <- embed(y, 1)
-  yi <- 1:NROW(y)
-  
-  y[boot.sample(yi,b, type), , drop = TRUE]
-  
-}
-boot.sample <-
-  function(x, b, type)
-  {
-    return(.C("boot",as.vector(x, mode = "double"),
-              x = as.vector(x, mode = "double"),
-              as.integer(length(x)),
-              as.double(b),
-              as.integer(0),
-              PACKAGE = "tseries")$x)
-  }
+startDates<-c(as.POSIXct(paste("2010-11-18 00:00:00",sep=""),tz="UTC"),
+              as.POSIXct(paste("2011-04-25 00:00:00",sep=""),tz="UTC"),
+              as.POSIXct(paste("2011-10-18 00:00:00",sep=""),tz="UTC"),
+              as.POSIXct(paste("2012-3-2 00:00:00",sep=""),tz="UTC"),
+              as.POSIXct(paste("2012-10-18 00:00:00",sep=""),tz="UTC"),
+              as.POSIXct(paste("2013-3-2 00:00:00",sep=""),tz="UTC")           
+)
+stopDates<-c(as.POSIXct(paste("2011-03-01 00:00:00",sep=""),tz="UTC"),
+             as.POSIXct(paste("2011-05-20 00:00:00",sep=""),tz="UTC"),
+             as.POSIXct(paste("2012-2-8 00:00:00",sep=""),tz="UTC"),
+             as.POSIXct(paste("2012-06-01 00:00:00",sep=""),tz="UTC"),
+             as.POSIXct(paste("2013-3-2 00:00:00",sep=""),tz="UTC"),
+             as.POSIXct(paste("2013-07-01 00:00:00",sep=""),tz="UTC")
+             
+) 
 
 
 
 
 
+
+#mcd<-cbind(originalmyData$fingerPrints,TCmyData$fingerPrints,
+#           DermyData$fingerPrints,TC1DmyData$fingerPrints)
+#MCD<-originalmyData
+#mcd<-cbind(prunedO$fingerPrints,prunedTC$fingerPrints,
+#           pruned1D$fingerPrints,prunedTC1D$fingerPrints)
+
+#MCD<-pruned1D
+
+
+MCD$fingerPrints<-mcd
+rm(mcd)
+mcd<-cbind(original$fingerPrints,TurbidityCompensated$fingerPrints,
+           Derivative$fingerPrints,FstDerivativeTurbidityCompensated$fingerPrints)
+MSD<-original
+MSD$fingerPrints<-mcd
+rm(mcd)
+
+
+
+
+
+
+
+startDate<-min(startDates)
+stopDate<-max(stopDates)
+flow<-subsetAll(flow=Flow,dateWindows=cbind(startDates,stopDates))$flow
+for(year in 1:4){
+for(chemical in 1:14){
+  for(numComp in 3:9){
+#chemical<-1
+#numComp<-6
+subsetRate<-0
+all<-subsetAll(calibData=MCD,modelData=MSD,
+               chem=chemN[chemical],
+               dateWindows=cbind(startDates,stopDates),
+               keepSpecData=0)
+fileType<-"monsterup"
+fitFile<-paste(fitPath,  
+               Chem[chemN[chemical]],
+               "_",
+               fileType,
+               "_",
+               numComp,
+               "_",
+               paste((as.POSIXlt(startDate))$year+1900,"-",(as.POSIXlt(stopDate))$year+1900,sep=""),
+               "PLSR.in",sep=""
+)
+fitFileOut<-paste(fitPath, 
+                  Chem[chemN[chemical]],
+                  "_",
+                  fileType,
+                  "_",
+                  numComp,
+                  "_",
+                  paste((as.POSIXlt(startDate))$year+1900,"-",(as.POSIXlt(stopDate))$year+1900,sep=""),
+                  "PLSR_out.txt",sep=""
+)
+
+modelOutput<-modelExecution(numComp=numComp,subsampleRate=subsetRate,
+                            calibData=all$calibData,
+                            dataToModel=all$specData,
+                            fitEval,fitFile,fitFileOut
+                            )
+
+png(file = paste(OutputPath,
+                 Chem[chemN[chemical]],
+                 "_",
+                 fileType,
+                 "_",
+                 numComp,
+                 "_",
+                 (as.POSIXlt(startDate))$year+1900,
+                 ".png",sep=""),
+    unit="in",
+    width=8,height=4,res=300
+    
+)
+plot(as.POSIXct(flow$realTime,origin="1970-01-01 00:00:00"),
+     flow$flow,col="black",type="l",xaxt="n",yaxt="n",
+     xlab="date",ylab="",
+     xlim=c(min(modelOutput$PredictedConcentrations[,1]),max(modelOutput$PredictedConcentrations[,1],na.rm=TRUE))
+    )
+
+par(new=TRUE)
+plotMax<-max(modelOutput$ObservedandPredicted[,1])*1.5
+plotMin<-min((min(modelOutput$ObservedandPredicted[,1])-min(modelOutput$ObservedandPredicted[,1])*0.1),0)
+
+
+plot(as.POSIXct(modelOutput$ObservedandPredicted[,3],origin="1970-01-01 00:00:00"),
+     modelOutput$ObservedandPredicted[,1],
+     xlab="",
+     type="p",
+     col="green",
+     ylim=c(plotMin,plotMax),
+     ylab=paste(chemicals[chemical],sep=" "),
+     cex.lab=1.3,
+     pch=20,
+     cex=0.7,
+    xlim=c(min(modelOutput$PredictedConcentrations[,1]),max(modelOutput$PredictedConcentrations[,1],na.rm=TRUE))
+     )
+
+points(modelOutput$ObservedandPredicted[,3],
+       modelOutput$ObservedandPredicted[,2],
+       type="p",
+       pch=19,
+       cex=0.7,
+       col="blue"
+       )
+
+points(modelOutput$PredictedConcentrations[,1],
+       modelOutput$PredictedConcentrations[,2],
+       type="l",
+       col="red"
+       )
+
+legend("topright",
+       c("hydrograph","lab value","pred lab","pred ts"),
+       pch=c(NA,20,19,NA),
+       lty=c(1,NA,NA,1),
+       col=c("black","green","blue","red"),cex=0.8
+       )
+dev.off()
+}#for the #comp loop
+}#for each chem
+}#for each time window
